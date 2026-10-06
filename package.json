@@ -9,7 +9,7 @@
     "test": "node --test",
     "db:test": "node --test test/database.test.js",
     "db:init": "supabase init",
-    "db:login": "supabase login",
+    "db:login": "supabase login --no-browser",
     "db:link": "supabase link --project-ref szvxlhubtvhazlzohpse",
     "db:push": "supabase db push"
   },

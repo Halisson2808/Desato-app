@@ -59,6 +59,10 @@ npm run db:push -- --dry-run
 npm run db:push
 ```
 
+`npm run db:login` usa `--no-browser`: não abre automaticamente o navegador padrão. Mantenha o terminal aberto, copie o link novo completo e abra no navegador em que você usa a conta com acesso ao projeto. Não reutilize um link de uma tentativa encerrada.
+
+Se aparecer “Could not create CLI login session”, a sessão de login não foi criada pelo Supabase; a mensagem sozinha não determina a causa. Como alternativa oficial, entre na conta correta pelo navegador de sua escolha e use um Personal Access Token pelo fluxo de login por token da CLI. O token deve ser inserido somente no seu terminal, nunca no chat ou no Git. Referência: https://supabase.com/docs/guides/platform/personal-access-tokens
+
 A CLI pode solicitar a senha do banco no terminal. Não cole senha, token pessoal ou `service_role` no chat ou em arquivos públicos. A URL com `[YOUR-PASSWORD]` é um modelo, não uma conexão utilizável.
 
 `supabase init` já foi executado; não precisa repetir nem usar `--force`.
