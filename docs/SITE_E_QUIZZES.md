@@ -4,7 +4,7 @@
 
 `/quiz` abre diretamente a apresentação do funil principal. Não há catálogo, confirmação de idade, rodapé, login ou links de saída. O header contém apenas a logo e a marca Desato App.
 
-A abertura tem título, subtítulo, ilustração leve feita com CSS e um único botão para começar. Depois há uma pergunta por tela:
+A abertura tem título, subtítulo, ilustração leve feita com CSS e um único botão para começar. Não fala de dinheiro ou quantidade de perguntas. Depois há uma pergunta por tela:
 
 1. Objetivo pessoal.
 2–4. Perguntas da versão escolhida.
@@ -14,7 +14,7 @@ A abertura tem título, subtítulo, ilustração leve feita com CSS e um único 
 
 Seleção única avança imediatamente. Checklist permite várias escolhas e só habilita Continuar depois de uma seleção. Valores financeiros oferecem atalhos que avançam ao tocar e campos personalizados com validação. A seta interna permite corrigir etapas anteriores, preservando respostas.
 
-O resultado mostra objetivo, escolhas, gasto médio mensal/diário/anual e cenários de economia. As contas são projeções pelas respostas, sem classificação clínica e sem garantia de redução do consumo. Nesta versão, não há preço ou assinatura no resumo financeiro: o checkout foi expressamente adiado pelo usuário.
+Depois das perguntas, a tela de impacto mostra gastos mensal/anual e média diária. O botão Conhecer meu próximo passo abre uma tela separada de oferta: objetivo em destaque, benefícios atuais, preço de referência de R$ 20/mês e cenários de economia líquida. O preço não foi confirmado e o checkout não foi criado. Consultar PLANEJAMENTO_OFERTA.md.
 
 As cinco versões continuam disponíveis para uso por links diretos: `/quiz/consumo`, `/quiz/vontade`, `/quiz/gatilhos`, `/quiz/impacto` e `/quiz/retomada`. `/quiz` usa consumo como padrão. Nenhuma versão passa por uma tela de seleção.
 
@@ -43,6 +43,6 @@ Resultados v1 por conta e a API `/api/quiz` foram preservados, mas os controles 
 
 ## Verificação
 
-54 testes passaram: navegação automática, checklist, valores personalizados, correções, cálculos, cinco links diretos, preservação do app e autenticação. Os testes de coleta usam banco/servidores de teste, sem gravar respostas de pessoas no projeto real. A migração foi validada localmente, incluindo bloqueio de leitura pública, token errado e revisões fora de ordem.
+A versão anterior passou em 54 testes. A atualização de abertura/impacto/oferta passou nos oito testes do quiz, incluindo retorno entre telas, cálculo líquido e custo adicional com gasto zero. Os testes de coleta usam banco/servidores de teste, sem gravar respostas de pessoas no projeto real. A migração foi validada localmente, incluindo bloqueio de leitura pública, token errado e revisões fora de ordem.
 
 Não houve inspeção ou interação no navegador, conforme a preferência do usuário. Para carregar os arquivos novos em uma aba já aberta, usar Ctrl+F5.

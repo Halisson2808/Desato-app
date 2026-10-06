@@ -12,6 +12,7 @@ const goal = choice('goal', 'O que você procura neste momento?', [
 const spend = { id: 'spend', type: 'money', title: 'Quando sai para beber, quanto gasta em média por saída?', help: 'Informe só o gasto com bebidas nessas saídas. Se não sai, pode informar R$ 0.' };
 const frequency = { id: 'frequency', type: 'frequency', title: 'Em uma semana típica, quantas vezes você sai para beber?', help: 'Escolha de 1 a 7 ou informe outra frequência. Consumo em casa não entra nesta conta.' };
 export const MONTHLY_PRICE = 20; // Hipótese de planejamento; não há oferta ou cobrança.
+export const OFFER = Object.freeze({ monthlyPrice: MONTHLY_PRICE, priceConfirmed: false, checkoutUrl: null });
 export const QUIZZES = [
   { id: 'consumo', title: 'Minha relação com o álcool', subtitle: 'Frequência, limites e decisões.', number: '01', action: 'Observe quando você bebe mais do que pretendia e converse com um profissional sobre suas opções.', questions: [
     choice('drinking', 'Com que frequência você costuma beber?', [['rare','Menos de uma vez por semana'],['weekly','De 1 a 3 dias por semana'],['often','De 4 a 6 dias por semana'],['daily','Todos os dias',true]]),
