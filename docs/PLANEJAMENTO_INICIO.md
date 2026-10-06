@@ -15,6 +15,8 @@ A pessoa abre o aplicativo, registra se bebeu hoje, vê o mês por cores e acomp
 
 No celular, os blocos são verticais. No computador, gasto evitado e resumo do mês ficam lado a lado, abaixo do calendário. Header e as outras abas permanecem como estão. As propostas de logo continuam salvas, sem aplicação automática.
 
+Ajuste de compactação solicitado: menos preenchimento e espaço vertical no card de hoje, título menor e botões com altura mínima de 44 px. Calendário com dias de 44 px, menos distância entre linhas e cabeçalho/legenda mais próximos. No computador, os dias foram reduzidos de 75 para 44 px. Funções e cores permanecem iguais.
+
 ## Registro de hoje
 
 O toque em Não bebi/Bebi salva diretamente. A resposta fica visualmente selecionada. O botão Adicionar anotação abre um formulário opcional; editar o registro mantém a anotação existente.
