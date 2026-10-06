@@ -8,6 +8,8 @@ O projeto já é um MVP full-stack local funcional. Não reescreva a interface d
 
 ### O que já está pronto
 
+Início redesenhado em 06/10/2026: pergunta Você bebeu hoje em destaque, registro direto, calendário mensal clicável (verde sem consumo, vermelho com consumo, cinza sem registro), notas por data e estimativa financeira por mês. Cálculo derivado dos registros, sem incremento duplicado. Resumo da evolução e rotina complementam a tela. Consultar `PLANEJAMENTO_INICIO.md`; não recolocar a sequência de abstinência como protagonista automaticamente.
+
 - SPA em HTML/CSS/JavaScript sem framework.
 - Backend Node com API REST local.
 - Persistência padrão no Supabase por conta. JSON apenas com `STORAGE_MODE=json` local.

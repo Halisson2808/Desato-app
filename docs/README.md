@@ -4,6 +4,7 @@ Esta pasta reúne os documentos do projeto. O README da raiz é apenas o ponto d
 
 | Documento | Para que serve |
 | --- | --- |
+| [PLANEJAMENTO_INICIO.md](PLANEJAMENTO_INICIO.md) | Novo Início, calendário, registro diário e gasto evitado |
 | [SITE_E_QUIZZES.md](SITE_E_QUIZZES.md) | Rotas, cinco quizzes, resultado, salvamento e limites |
 | [PLANEJAMENTO_OFERTA.md](PLANEJAMENTO_OFERTA.md) | Sequência de impacto e oferta, benefícios e comparação financeira |
 | [GUIA_DO_APLICATIVO.md](GUIA_DO_APLICATIVO.md) | Guia detalhado e histórico de evolução; trechos antigos são contextualizados por atualizações posteriores |

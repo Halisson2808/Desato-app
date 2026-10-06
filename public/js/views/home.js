@@ -1,235 +1,61 @@
-import { $, $$, money, shortMoney, todayISO, escapeHtml, dateLabel } from '../utils.js';
-
-function calcMoney(perOuting, outingsPerWeek, cleanDays) {
-  const weekly = perOuting * outingsPerWeek;
-  const monthly = weekly * 52 / 12;
-  const annual = weekly * 52;
-  const daily = annual / 365;
-  return { weekly, monthly, annual, saved: daily * cleanDays };
-}
-
-function last7(store) {
-  const out = [];
-  const labels = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  for (let i = 6; i >= 0; i -= 1) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const y = d.getFullYear();
-    const m = String(d.getMonth()+1).padStart(2,'0');
-    const day = String(d.getDate()).padStart(2,'0');
-    const key = `${y}-${m}-${day}`;
-    const status = store.checkins[key]?.status;
-    out.push({ label: labels[d.getDay()], status, height: status === 'clean' ? 80 : status === 'used' ? 28 : 12 });
-  }
-  return out;
-}
-
-function milestone(streak) {
-  const marks = [1,3,7,14,30,60,90,180,365];
-  const next = marks.find(x => x > streak) || (Math.floor(streak / 365) + 1) * 365;
-  const prev = [...marks].reverse().find(x => x <= streak) || 0;
-  const pct = next === prev ? 100 : Math.max(4, Math.min(100, ((streak - prev) / (next - prev)) * 100));
-  return { next, prev, pct, remaining: Math.max(0, next - streak) };
-}
-
-export const homeView = {
-  html({ state }) {
-    const { store, summary } = state;
-    const m = milestone(summary.streak);
-    const today = summary.todayCheckin;
-    const routinePct = summary.routine.total ? Math.round(summary.routine.done / summary.routine.total * 100) : 0;
-    const recorded = summary.month.clean + summary.month.used;
-    const monthPct = recorded ? Math.round(summary.month.clean / recorded * 100) : 0;
-    const chart = last7(store);
-
-    return `
-      <div class="screen-title">
-        <h2>Seu progresso</h2>
-        <p>O principal fica aqui: registrar o dia e enxergar o que está mudando.</p>
-      </div>
-
-      <section class="card hero-card">
-        <div class="hero-kicker">Sequência de dias registrados sem consumo</div>
-        <div class="hero-number"><strong>${summary.streak}</strong><span>${summary.streak === 1 ? 'dia' : 'dias'}</span></div>
-        <div class="hero-sub">${today ? (today.status === 'clean' ? 'Hoje já está registrado como um dia sem consumo.' : 'Hoje foi registrado com consumo. Amanhã é um novo registro.') : 'Como foi o seu dia hoje?'}</div>
-        <div class="hero-actions">
-          <button class="hero-btn ${today?.status === 'clean' ? 'done' : 'primary'}" id="checkin-clean">${today?.status === 'clean' ? '✓ Hoje não consumi' : 'Não consumi hoje'}</button>
-          <button class="hero-btn ${today?.status === 'used' ? 'done' : ''}" id="checkin-used">${today?.status === 'used' ? '✓ Registrei consumo' : 'Consumi hoje'}</button>
-        </div>
-      </section>
-
-      <div class="stat-grid">
-        <div class="stat-card"><div class="icon">📆</div><strong>${summary.month.clean}/${summary.month.elapsed}</strong><span>dias sem consumo neste mês</span></div>
-        <div class="stat-card"><div class="icon">🏆</div><strong>${summary.cleanDaysTotal}</strong><span>dias positivos registrados no total</span></div>
-      </div>
-
-      <div class="home-grid-two">
-      <section class="section">
-        <div class="section-head"><div><h3>Dinheiro economizado</h3><p>Estimativa baseada no seu gasto habitual.</p></div></div>
-        <div class="card money-card">
-          <div class="money-main">
-            <div class="money-icon">🐷</div>
-            <div class="money-copy"><span class="label">Você evitou gastar aproximadamente</span><strong>${money(summary.money.saved)}</strong><small>em ${summary.money.cleanDays} dias sem consumo</small></div>
-            <button class="money-edit" id="money-edit">Calcular</button>
-          </div>
-          <div class="money-compare">
-            <div><strong>${shortMoney(summary.money.weekly)}</strong><span>por semana</span></div>
-            <div><strong>${shortMoney(summary.money.monthly)}</strong><span>por mês</span></div>
-            <div><strong>${shortMoney(summary.money.annual)}</strong><span>por ano</span></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head"><div><h3>Próxima conquista</h3><p>Sem apagar o progresso que já foi construído.</p></div></div>
-        <div class="card progress-block">
-          <div class="progress-row"><strong>${m.next} dias</strong><span>${m.remaining ? `faltam ${m.remaining}` : 'concluído'}</span></div>
-          <div class="progress-track"><div class="progress-fill" style="width:${m.pct}%"></div></div>
-        </div>
-      </section>
-
-      </div>
-
-      <div class="home-grid-two">
-      <section class="section">
-        <div class="section-head"><div><h3>Sua evolução</h3><p>Últimos 7 dias; dias sem registro aparecem menores.</p></div><div><button class="section-link" id="history-open">Histórico</button> <button class="section-link" id="evolution-info">Entender</button></div></div>
-        <div class="card">
-          <div class="mini-chart">
-            ${chart.map(x => `<div class="chart-col"><div class="chart-bar-wrap"><div class="chart-bar" title="${x.status === 'clean' ? 'Sem consumo' : x.status === 'used' ? 'Com consumo' : 'Sem registro'}" style="height:${x.height}%;background:${x.status === 'used' ? 'var(--warning)' : x.status ? 'var(--primary-2)' : 'var(--line)'}"></div></div><div class="chart-label">${x.label}</div></div>`).join('')}
-          </div>
-          <div class="divider"></div>
-          <div class="progress-row"><strong>${monthPct}% dos dias registrados sem consumo</strong><span>${summary.month.used} ${summary.month.used === 1 ? 'dia com consumo' : 'dias com consumo'}</span></div>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head"><div><h3>Rotina de hoje</h3><p>Pequenos hábitos para ocupar e organizar o dia.</p></div><button class="section-link" id="go-routine">Abrir rotina</button></div>
-        <div class="card routine-summary">
-          <div class="ring" style="--pct:${routinePct}%"><strong>${summary.routine.done}/${summary.routine.total}</strong></div>
-          <div><h4>${routinePct === 100 && summary.routine.total ? 'Rotina concluída 🎉' : 'Continue no seu ritmo'}</h4><p>${summary.routine.total ? `${summary.routine.total - summary.routine.done} hábito(s) ainda disponíveis hoje.` : 'Adicione hábitos simples para o seu dia.'}</p></div>
-        </div>
-      </section>
-
-      </div>
-
-      <section class="section compact-safety-note">
-        <div class="card notice warning"><strong>Importante:</strong> em caso de sintomas físicos intensos ou emergência, procure atendimento imediatamente.</div>
-      </section>
-    `;
+import { $, $$, money, todayISO, escapeHtml, dateLabel } from '../utils.js';
+import { validMonth, monthCalendar, homeProgress, adjacentMonth } from '../content/home-progress.js';
+const monthName=month=>new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(new Date(Number(month.slice(0,4)),Number(month.slice(5))-1,1,12));
+export const homeView={
+  html({state}) {
+    const {store,summary}=state,today=summary.today||todayISO();
+    if(state.ui.homeCalendarToday&&state.ui.homeCalendarToday.slice(0,7)!==today.slice(0,7)&&state.ui.homeMonth===state.ui.homeCalendarToday.slice(0,7))state.ui.homeMonth=today.slice(0,7);
+    state.ui.homeCalendarToday=today;
+    const month=validMonth(state.ui.homeMonth,today);state.ui.homeMonth=month;
+    const stats=homeProgress(store,month,today),current=store.checkins[today];
+    const cells=monthCalendar(month,today,store.checkins);
+    const firstName=store.profile.name?.trim().split(/\s+/)[0];
+    return `<div class="home-dashboard"><div class="home-welcome"><span>SEU DIA, UM PASSO DE CADA VEZ</span><h2>${firstName&&firstName!=='Você'?`Bom te ver, ${escapeHtml(firstName)}.`:'Vamos cuidar de hoje.'}</h2></div>
+    <section class="today-question"><div class="today-heading"><span>HOJE</span><time datetime="${today}">${dateLabel(today)}</time></div><h3>Você bebeu hoje?</h3><p>Um registro simples para acompanhar sua mudança.</p><div class="today-answers"><button id="checkin-clean" class="today-answer answer-clean ${current?.status==='clean'?'is-selected':''}" aria-pressed="${current?.status==='clean'}"><span class="answer-symbol" aria-hidden="true">${current?.status==='clean'?'✓':'○'}</span>Não bebi hoje</button><button id="checkin-used" class="today-answer answer-used ${current?.status==='used'?'is-selected':''}" aria-pressed="${current?.status==='used'}"><span class="answer-symbol" aria-hidden="true">${current?.status==='used'?'✓':'○'}</span>Bebi hoje</button></div><div class="today-footer"><span>${current?'Registro de hoje salvo. Você pode corrigir quando precisar.':'Hoje ainda está sem registro.'}</span><button id="today-note">${current?.note?'Ver anotação':'Adicionar anotação'}</button></div></section>
+    <section class="card home-calendar"><div class="home-section-head"><div><span>SEU HISTÓRICO</span><h3>Um dia de cada vez</h3></div><button class="home-text-action" id="history-open">Escolher uma data</button></div><div class="calendar-toolbar"><button id="month-prev" aria-label="Mês anterior">‹</button><strong>${escapeHtml(monthName(month))}</strong><button id="month-next" aria-label="Próximo mês" ${month===today.slice(0,7)?'disabled':''}>›</button></div><div class="calendar-weekdays" aria-hidden="true">${['D','S','T','Q','Q','S','S'].map(day=>`<span>${day}</span>`).join('')}</div><div class="calendar-days">${cells.map(cell=>cell?`<button class="calendar-day ${cell.future?'future':cell.status==='clean'?'clean':cell.status==='used'?'used':'unmarked'} ${cell.date===today?'is-today':''}" data-calendar-date="${cell.date}" ${cell.future?'disabled':''} aria-label="${escapeHtml(dateLabel(cell.date))}: ${cell.future?'dia futuro':cell.status==='clean'?'não bebeu':cell.status==='used'?'bebeu':'sem registro'}${cell.note?', tem anotação':''}"><span>${cell.day}</span><span class="day-symbol" aria-hidden="true">${cell.status==='clean'?'✓':cell.status==='used'?'×':'·'}</span>${cell.note?'<i class="note-dot" aria-hidden="true"></i>':''}</button>`:'<span class="calendar-empty" aria-hidden="true"></span>').join('')}</div><div class="calendar-legend"><span><i class="legend-clean"></i>Não bebeu</span><span><i class="legend-used"></i>Bebeu</span><span><i class="legend-unmarked"></i>Sem registro</span></div><p class="calendar-tip">Toque em um dia para anotar ou corrigir. Os dias sem registro ficam cinza.</p></section>
+    <div class="home-bottom-grid"><section class="home-savings ${stats.configured?'has-calculation':'needs-calculation'}">${stats.configured?`<div class="savings-heading"><span>SEU GASTO EVITADO</span><button id="money-edit">Editar cálculo</button></div><h3>${escapeHtml(monthName(month))}</h3><div class="saved-amount">${money(stats.savedMonth)}</div><p class="savings-basis">Estimativa em ${stats.clean} ${stats.clean===1?'dia registrado':'dias registrados'} sem consumo.</p>${month===today.slice(0,7)?`<div class="today-saving"><span>Hoje</span><strong>${money(stats.savedToday)}</strong><small>${current?.status==='clean'?'já entrou na estimativa do mês':current?.status==='used'?'registrado com consumo':'aguardando seu registro'}</small></div>`:''}<div class="savings-secondary"><div><span>Média por dia sem consumo</span><strong>${money(stats.daily)}</strong></div><div><span>Desde o primeiro registro</span><strong>${money(stats.savedTotal)}</strong></div></div><p class="savings-explanation">Gasto evitado estimado a partir do seu hábito informado. Não é saldo em dinheiro.</p>`:`<span class="savings-eyebrow">MAIS UMA FORMA DE VER SUA EVOLUÇÃO</span><div class="savings-art" aria-hidden="true">R$</div><h3>Veja o que você está evitando gastar.</h3><p>Quer calcular quanto costuma gastar com bebida e acompanhar sua evolução?</p><button class="primary-btn" id="money-edit">Calcular meu gasto</button><small>Depois do cálculo, cada dia registrado sem consumo entra na estimativa.</small>`}</section>
+    <section class="card home-month-summary"><div class="home-section-head"><div><span>SUA EVOLUÇÃO</span><h3>O que seus registros mostram</h3></div></div><div class="month-number-grid"><div class="month-number clean"><strong>${stats.clean}</strong><span>dias sem beber</span></div><div class="month-number used"><strong>${stats.used}</strong><span>dias com consumo</span></div><div class="month-number unmarked"><strong>${stats.unknown}</strong><span>dias sem registro</span></div></div><div class="month-track" role="img" aria-label="${stats.percent}% dos dias registrados sem consumo"><span style="width:${stats.percent}%"></span></div><p>${stats.recorded?`<strong>${stats.percent}% dos dias que você registrou</strong> foram sem consumo.`:'Seu primeiro registro já começa a construir esse acompanhamento.'}</p><p class="month-context">${escapeHtml(monthName(month))}. Dias sem registro não contam como dias sem consumo.</p><div class="home-routine"><div><span>ROTINA DE HOJE</span><strong>${summary.routine.done} de ${summary.routine.total} hábitos concluídos</strong></div><button id="go-routine" aria-label="Abrir rotina">→</button></div></section></div></div>`;
   },
-
   bind(ctx) {
-    const { state, endpoints, mutate, openModal, navigate } = ctx;
-    const todayStatus = state.summary.todayCheckin?.status;
-
-    $('#checkin-clean')?.addEventListener('click', async () => {
-      if (todayStatus === 'clean') return;
-      await mutate(() => endpoints.checkin({ status: 'clean', date: todayISO() }), 'Dia registrado. Continue um passo de cada vez.');
-    });
-
-    $('#checkin-used')?.addEventListener('click', () => {
-      openModal({
-        title: 'Registrar o dia',
-        subtitle: 'O registro serve para acompanhar o processo, não para apagar o que você já conquistou.',
-        content: `
-          <div class="notice success">Seu histórico continuará mostrando todos os dias positivos anteriores.</div>
-          <div class="field" style="margin-top:14px"><label>Quer anotar o que aconteceu? (opcional)</label><textarea id="used-note" placeholder="Ex.: encontrei amigos, fiquei ansioso, foi depois do trabalho..."></textarea></div>
-          <button class="primary-btn" id="confirm-used">Salvar registro de hoje</button>
-        `,
-        onOpen({ close }) {
-          $('#confirm-used')?.addEventListener('click', async () => {
-            const note = $('#used-note').value;
-            const ok = await mutate(() => endpoints.checkin({ status: 'used', date: todayISO(), note }), 'Registro salvo.');
-            if (ok) close();
-          });
+    const {state,endpoints,mutate,openModal,navigate,redraw}=ctx;
+    const today=state.summary.today||todayISO(),month=state.ui.homeMonth;
+    async function register(status) {
+      if(state.store.checkins[today]?.status===status)return;
+      await mutate(()=>endpoints.checkin({date:today,status,note:state.store.checkins[today]?.note||''}),status==='clean'?'Registrado: hoje você não bebeu. Sua evolução foi atualizada.':'Registro salvo. Seu histórico continua completo.');
+    }
+    $('#checkin-clean').addEventListener('click',()=>register('clean'));
+    $('#checkin-used').addEventListener('click',()=>register('used'));
+    $('#month-prev').addEventListener('click',()=>{state.ui.homeMonth=adjacentMonth(month,-1);redraw();});
+    $('#month-next').addEventListener('click',()=>{const next=adjacentMonth(month,1);if(next<=today.slice(0,7)){state.ui.homeMonth=next;redraw();}});
+    $('#go-routine').addEventListener('click',()=>navigate('rotina'));
+    function editDay(date,chooseDate=false) {
+      const item=state.store.checkins[date];
+      openModal({title:chooseDate?'Escolher um dia':`Registro de ${dateLabel(date)}`,subtitle:'Seu histórico guarda cada dia e suas anotações.',content:`${chooseDate?`<div class="field"><label for="record-date">Dia</label><input id="record-date" type="date" max="${today}" value="${date}" required></div>`:''}<div class="field"><label for="record-status">Você bebeu nesse dia?</label><select id="record-status" required><option value="">Escolha uma resposta</option><option value="clean" ${item?.status==='clean'?'selected':''}>Não bebi</option><option value="used" ${item?.status==='used'?'selected':''}>Bebi</option></select></div><div class="field"><label for="record-note">Sua anotação (opcional)</label><textarea id="record-note" maxlength="500" placeholder="Como foi o dia?">${escapeHtml(item?.note||'')}</textarea></div><button class="primary-btn" id="record-save">Salvar registro</button>`,onOpen({close}) {
+        $('#record-date')?.addEventListener('change',()=>{const row=state.store.checkins[$('#record-date').value];$('#record-status').value=row?.status||'';$('#record-note').value=row?.note||'';});
+        $('#record-save').addEventListener('click',async()=>{
+          if(!$('#record-status').reportValidity()||($('#record-date')&&!$('#record-date').reportValidity()))return;
+          const ok=await mutate(()=>endpoints.checkin({date:$('#record-date')?.value||date,status:$('#record-status').value,note:$('#record-note').value}),'Registro salvo. Calendário e evolução atualizados.');if(ok)close();
+        });
+      }});
+    }
+    $$('[data-calendar-date]').forEach(button=>button.addEventListener('click',()=>editDay(button.dataset.calendarDate)));
+    $('#today-note').addEventListener('click',()=>editDay(today));
+    $('#history-open').addEventListener('click',()=>editDay(today,true));
+    $('#money-edit').addEventListener('click',()=>{
+      const current=state.store.money;
+      openModal({title:'Seu gasto habitual com bebidas',subtitle:'Vamos transformar seu gasto por saída em uma média diária.',content:`<div class="field"><label for="spend">Gasto médio com bebidas por saída (R$)</label><input id="spend" type="number" min="0" max="1000000" step="0.01" inputmode="decimal" value="${current.spendPerOuting||''}" placeholder="Ex.: 100" required></div><div class="field"><label for="times">Quantas saídas por semana, em média?</label><input id="times" type="number" min="0" max="14" step="any" inputmode="decimal" value="${current.outingsPerWeek||''}" placeholder="Ex.: 2" required></div><div id="calc-preview" class="home-calc-preview"></div><p class="home-calc-note">A média diária entra no mês somente nos dias que você marcar como “não bebi”. É uma estimativa, baseada em 52 semanas por ano. Editar estes valores recalcula as estimativas do seu histórico.</p><button class="primary-btn" id="save-money">Salvar e acompanhar</button>`,onOpen({close}) {
+        function preview() {
+          const spend=Number($('#spend').value),frequency=Number($('#times').value);
+          if(!$('#spend').value||!$('#times').value||!Number.isFinite(spend)||!Number.isFinite(frequency)||spend<0||frequency<0||spend>1000000||frequency>14){$('#calc-preview').textContent='Preencha os dois valores para ver a estimativa.';return;}
+          const annual=spend*frequency*52;
+          $('#calc-preview').innerHTML=`<span>Seu gasto habitual representa</span><strong>${money(annual/12)} por mês</strong><div><span>Média por dia</span><b>${money(annual/365)}</b></div>`;
         }
-      });
-    });
-
-    $('#money-edit')?.addEventListener('click', () => {
-      const current = state.store.money;
-      const cleanDays = state.summary.cleanDaysTotal;
-      openModal({
-        title: 'Calculadora de economia',
-        subtitle: 'Informe quanto costuma gastar quando sai para beber e quantas vezes isso acontece por semana.',
-        content: `
-          <div class="input-grid">
-            <div class="field"><label>Gasto por saída</label><input id="spend" type="number" inputmode="decimal" min="0" max="1000000" step="0.01" value="${current.spendPerOuting}"></div>
-            <div class="field"><label>Vezes por semana</label><input id="times" type="number" inputmode="decimal" min="0" max="14" step="0.5" value="${current.outingsPerWeek}"></div>
-          </div>
-          <div class="calc-preview" id="calc-preview"></div>
-          <div class="notice success">A economia exibida no Início usa uma média diária do gasto anual estimado e multiplica pelos seus dias sem consumo.</div>
-          <button class="primary-btn" id="save-money" style="margin-top:12px">Salvar cálculo</button>
-        `,
-        onOpen({ close }) {
-          const updatePreview = () => {
-            const p = Math.max(0, Number($('#spend').value) || 0);
-            const t = Math.max(0, Number($('#times').value) || 0);
-            const c = calcMoney(p, t, cleanDays);
-            $('#calc-preview').innerHTML = `<span>Com esses valores, seu gasto estimado seria</span><strong>${money(c.monthly)} por mês</strong><div class="calc-grid"><div><span>Semana</span><strong>${money(c.weekly)}</strong></div><div><span>Ano</span><strong>${money(c.annual)}</strong></div><div><span>Já economizado</span><strong>${money(c.saved)}</strong></div><div><span>Dias positivos</span><strong>${cleanDays}</strong></div></div>`;
-          };
-          $('#spend').addEventListener('input', updatePreview);
-          $('#times').addEventListener('input', updatePreview);
-          updatePreview();
-          $('#save-money').addEventListener('click', async () => {
-            if (!$('#spend').reportValidity() || !$('#times').reportValidity()) return;
-            const body = { spendPerOuting: Number($('#spend').value) || 0, outingsPerWeek: Number($('#times').value) || 0 };
-            const ok = await mutate(() => endpoints.money(body), 'Cálculo atualizado.');
-            if (ok) close();
-          });
-        }
-      });
-    });
-
-    $('#go-routine')?.addEventListener('click', () => navigate('rotina'));
-    $('#history-open')?.addEventListener('click', () => {
-      const entries = Object.entries(state.store.checkins).sort(([a], [b]) => b.localeCompare(a));
-      openModal({
-        title: 'Histórico de registros',
-        subtitle: 'Consulte suas anotações e corrija um dia quando necessário.',
-        content: `
-          <div class="field"><label for="history-date">Dia</label><input id="history-date" type="date" max="${todayISO()}" value="${todayISO()}"></div>
-          <div class="field"><label for="history-status">Registro</label><select id="history-status"><option value="clean">Não consumi</option><option value="used">Consumi</option></select></div>
-          <div class="field"><label for="history-note">Anotação (opcional)</label><textarea id="history-note" maxlength="500"></textarea></div>
-          <button class="primary-btn" id="history-save">Salvar dia</button>
-          <div class="reason-list" style="margin-top:16px">
-            ${entries.map(([date, item]) => `<button class="reason" data-history-date="${escapeHtml(date)}" style="text-align:left"><strong>${escapeHtml(dateLabel(date))} · ${item.status === 'clean' ? 'Sem consumo' : 'Com consumo'}</strong>${item.note ? `<p>${escapeHtml(item.note)}</p>` : ''}</button>`).join('') || '<p class="empty">Ainda não há registros.</p>'}
-          </div>
-        `,
-        onOpen({ close }) {
-          const load = () => {
-            const item = state.store.checkins[$('#history-date').value];
-            $('#history-status').value = item?.status || 'clean';
-            $('#history-note').value = item?.note || '';
-          };
-          $('#history-date').addEventListener('change', load);
-          $$('[data-history-date]').forEach(button => button.addEventListener('click', () => {
-            $('#history-date').value = button.dataset.historyDate;
-            load();
-            $('#history-date').focus();
-          }));
-          load();
-          $('#history-save').addEventListener('click', async () => {
-            const date = $('#history-date');
-            if (!date.value || !date.reportValidity()) return;
-            const ok = await mutate(() => endpoints.checkin({ date: date.value, status: $('#history-status').value, note: $('#history-note').value }), 'Dia salvo.');
-            if (ok) close();
-          });
-        }
-      });
-    });
-    $('#evolution-info')?.addEventListener('click', () => {
-      openModal({
-        title: 'Como ler sua evolução',
-        subtitle: 'O objetivo é mostrar tendência, não exigir perfeição.',
-        content: `
-          <div class="reason-list">
-            <div class="reason"><strong>Dias sem consumo:</strong> mostram seus registros positivos.</div>
-            <div class="reason"><strong>Dias com consumo:</strong> continuam no histórico sem apagar os dias anteriores.</div>
-            <div class="reason"><strong>Rotina e economia:</strong> ajudam a enxergar ganhos que vão além da sequência.</div>
-          </div>
-        `
-      });
+        $('#spend').addEventListener('input',preview);$('#times').addEventListener('input',preview);preview();
+        $('#save-money').addEventListener('click',async()=>{
+          if(!$('#spend').reportValidity()||!$('#times').reportValidity())return;
+          const ok=await mutate(()=>endpoints.money({spendPerOuting:Number($('#spend').value),outingsPerWeek:Number($('#times').value)}),'Cálculo salvo. Seus registros já atualizam a estimativa.');if(ok)close();
+        });
+      }});
     });
   }
 };

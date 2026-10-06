@@ -247,6 +247,7 @@ function render() {
     openModal,
     navigate: setRoute,
     refresh,
+    redraw: render,
     appName: APP_NAME,
     auth,
     signOut: () => auth.signOut(),
