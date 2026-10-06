@@ -31,6 +31,7 @@ Cada data tem um registro. Toques repetidos não criam novos dias nem duplicam e
 - **Hoje:** contorno adicional.
 - **Anotação existente:** pequeno ponto no dia.
 - **Dias futuros:** cinza discreto, sem permitir registro.
+- Ajuste visual: verde e vermelho saturados com números brancos; dias passados sem registro em cinza preenchido; futuros quase brancos com borda tracejada, número claro e sem símbolo de registro. A legenda também identifica Futuro.
 
 As cores têm legenda; os botões também informam data e estado para leitores de tela. Sem registro nunca significa sem consumo. Dias futuros não entram no resumo do mês.
 
@@ -41,6 +42,8 @@ Tocar em uma data abre a resposta e a anotação para leitura ou correção. Esc
 ## Calculadora e evolução financeira
 
 Antes de configurar, mostrar: **“Quer calcular quanto costuma gastar com bebida e acompanhar sua evolução?”**, com o botão **Calcular meu gasto**.
+
+Versão compacta do convite: título “Veja o que você está evitando gastar”, uma frase (“Informe seu gasto e veja a estimativa crescer nos dias sem consumo”) e o botão. Retirados decoração, subtítulo superior e explicação repetida. O cálculo detalhado permanece no formulário.
 
 Perguntas:
 
