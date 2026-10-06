@@ -113,3 +113,13 @@ O Supabase recusou o vínculo ao projeto `szvxlhubtvhazlzohpse` por falta de pri
 ## Banco Supabase aplicado — 06/10/2026
 
 Após o usuário concluir o login da CLI, o projeto `szvxlhubtvhazlzohpse` foi vinculado. A migração `20261006000100_desato_initial.sql` foi aplicada, e o histórico remoto confirma a versão `20261006000100`. A consulta `supabase/verify.sql` confirmou as 12 tabelas protegidas por RLS e a trigger de cadastro. Nenhum histórico local foi importado. A pendência de acesso administrativo anterior foi resolvida; a adaptação do aplicativo e o login de usuários permanecem como próximas etapas.
+
+## Login e persistência por conta — 06/10/2026
+
+Implementados login, cadastro, confirmação, recuperação PKCE, alteração de e-mail e logout via Supabase Auth. A sessão é persistida/renovada pelo SDK oficial local; senha não é salva pelo Desato. O servidor valida a identidade no Supabase e realiza alterações específicas por tabela com o token do usuário, preservando RLS. Arquivos JSON antigos permanecem locais e não são importados automaticamente.
+
+O modo padrão passou a ser Supabase. JSON fica restrito a desenvolvimento explícito em endereço local. O BAT usa a rota pública de saúde do servidor, em vez de acessar dados antes do login. A troca de conta limpa os dados e modais; respostas de uma sessão anterior não substituem o estado da conta atual.
+
+Verificação remota sem criar contas: cadastro por e-mail habilitado, confirmação obrigatória e tabela de perfis inacessível com apenas a chave pública. O usuário confirmou que adicionou as duas URLs locais de redirecionamento. Não foram enviados e-mails de teste, e a entrega depende da configuração de SMTP do projeto. Nenhum navegador foi aberto; testes de tela usam DOM em memória.
+
+Validação da integração: 40 testes distintos aprovados (suite geral e teste adicional de formulário), cobrindo API, RLS, tela, sessão, troca de contas, salvamentos e ausência de senha no armazenamento local. Layout validado somente pelo código e DOM em memória, conforme orientação do usuário.

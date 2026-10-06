@@ -1,6 +1,6 @@
-# Desato App — MVP local
+# Desato App
 
-Base funcional de um aplicativo web responsivo para acompanhamento diário de quem está mudando o consumo de álcool. O projeto funciona localmente com **frontend + API Node + persistência em JSON**, sem dependências externas.
+Base funcional de um aplicativo web responsivo para acompanhamento diário de quem está mudando o consumo de álcool. O projeto funciona com **frontend + API Node + Supabase Auth e PostgreSQL**, com dados separados por conta. O servidor local usa apenas recursos nativos do Node; o SDK do navegador está empacotado no projeto.
 
 > Marca definida: **Desato** na interface e **Desato App** nos títulos e metadados de descoberta. O planejamento do quiz está em [PLANEJAMENTO_QUIZ.md](PLANEJAMENTO_QUIZ.md).
 
@@ -56,13 +56,15 @@ Tudo aparece no Início.
 
 ## Persistência atual
 
-Os dados ficam em:
+Por padrão, os dados são salvos nas tabelas `desato_*` do Supabase com a sessão autenticada. Cada rota valida a identidade no Supabase e opera somente sobre os registros desse usuário, com RLS no banco. Não há fallback automático para JSON se a conexão falhar.
+
+O arquivo local antigo continua preservado em:
 
 ```text
 data/store.json
 ```
 
-O frontend conversa com `/api/*`, então o Codex pode substituir o JSON por PostgreSQL, Supabase, Firebase ou outro banco sem redesenhar as telas.
+O frontend conversa com `/api/*`. Para desenvolvimento e testes isolados, `STORAGE_MODE=json` mantém o armazenamento antigo, somente em endereço local.
 
 ## Estrutura
 
@@ -145,8 +147,22 @@ Os guias de Apoio usam `.js`, servido como JavaScript inclusive por versões ant
 
 ## Banco Supabase criado
 
-A migração do Desato com 12 tabelas e isolamento por usuário está em `supabase/migrations/20261006000100_desato_initial.sql`. Os testes SQL estão disponíveis com `npm run db:test`. A migração foi aplicada ao projeto `szvxlhubtvhazlzohpse`; as 12 tabelas, regras RLS e trigger de cadastro foram verificadas remotamente. O aplicativo continua usando JSON até a integração com autenticação. Consulte [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
+A migração do Desato com 12 tabelas e isolamento por usuário está em `supabase/migrations/20261006000100_desato_initial.sql`. Os testes SQL estão disponíveis com `npm run db:test`. A migração foi aplicada ao projeto `szvxlhubtvhazlzohpse`; as 12 tabelas, regras RLS e trigger de cadastro foram verificadas remotamente. O aplicativo já usa Supabase por padrão e oferece login, cadastro, recuperação, sessão persistente e logout. Consulte [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
 
 ## Repositório
 
 Código e migrações: [Halisson2808/Desato-app](https://github.com/Halisson2808/Desato-app). Dados pessoais em `data/`, arquivos de ambiente privados, cache e dependências não são enviados ao GitHub.
+
+## Login e conta
+
+Abra o aplicativo normalmente pelo BAT. Entre com e-mail e senha ou use **Criar conta**. O Supabase está configurado para confirmar o e-mail antes do primeiro acesso. **Esqueci a senha** envia o link de recuperação; abra esse link no mesmo navegador em que o solicitou (fluxo PKCE). O Perfil permite solicitar a alteração de e-mail, redefinir senha e sair.
+
+O Desato não salva senha em JSON, banco próprio, código ou localStorage. O navegador pode oferecer seu gerenciador de senhas pelos atributos de preenchimento automático. O SDK oficial mantém e renova a sessão; o e-mail pode ser lembrado pela opção do formulário. Dados carregados e modais são limpos ao sair ou trocar de conta.
+
+URL e chave pública estão em `config/supabase.json`, com substituição opcional por `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` no ambiente do processo. Somente chave publishable é aceita; nenhuma chave administrativa é necessária para o aplicativo. `GET /api/config` expõe exclusivamente configuração pública. `GET /api/health` permite ao BAT aguardar o servidor sem acessar dados pessoais.
+
+O usuário confirmou as URLs `http://127.0.0.1:4173` e `http://localhost:4173` na configuração de redirecionamento do Supabase. Quando publicar, adicione o domínio real. A entrega de confirmação e recuperação depende do serviço de e-mail/SMTP do Supabase; não foi enviado e-mail de teste a pessoas nesta implementação.
+
+O histórico local antigo não foi enviado nem atribuído a nenhuma conta automaticamente. A primeira conta começa com seus próprios registros no banco.
+
+Para reempacotar o SDK após alterar suas dependências: `npm run build:auth` (após `npm ci`). O arquivo gerado é servido localmente e está incluído no cache da interface. Os testes cobrem a tela pelo DOM, sem abrir navegador.

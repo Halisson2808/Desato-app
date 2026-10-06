@@ -11,13 +11,17 @@
     "db:init": "supabase init",
     "db:login": "supabase login --no-browser",
     "db:link": "supabase link --project-ref szvxlhubtvhazlzohpse",
-    "db:push": "supabase db push"
+    "db:push": "supabase db push",
+    "build:auth": "node scripts/build-auth.cjs"
   },
   "engines": {
     "node": ">=18"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",
+    "@supabase/supabase-js": "2.117.2",
+    "esbuild": "0.28.2",
+    "linkedom": "0.18.13",
     "supabase": "2.119.0"
   }
 }

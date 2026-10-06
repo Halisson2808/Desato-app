@@ -1,3 +1,4 @@
+import { authMessage } from '../auth.js';
 import { $, escapeHtml, initials, dateLabel } from '../utils.js';
 
 export const profileView = {
@@ -6,7 +7,7 @@ export const profileView = {
     return `
       <div class="screen-title">
         <h2>Perfil</h2>
-        <p>Só o essencial para manter o MVP simples.</p>
+        <p>Seus dados, seu objetivo e o acesso à sua conta.</p>
       </div>
 
       <section class="card profile-card profile-card-clean">
@@ -34,6 +35,7 @@ export const profileView = {
         </div>
       </section>
 
+      ${state.storageMode === 'supabase' ? `<section class="section profile-settings-section"><div class="section-head"><div><h3>Acesso à conta</h3><p>Gerencie seu e-mail e sua senha.</p></div></div><div class="settings-list clean-settings"><button class="setting-row" id="profile-email"><div class="setting-icon">@</div><div class="setting-copy"><strong>Alterar e-mail</strong><span>Confirmação pelo Supabase</span></div><span class="chev">›</span></button><button class="setting-row" id="profile-password"><div class="setting-icon">✦</div><div class="setting-copy"><strong>Redefinir senha</strong><span>Receber um link no meu e-mail</span></div><span class="chev">›</span></button><button class="setting-row" id="profile-signout"><div class="setting-icon">↪</div><div class="setting-copy"><strong>Sair da conta</strong><span>Encerrar o acesso neste navegador</span></div><span class="chev">›</span></button></div></section>` : ''}
       <section class="section">
         <div class="card profile-minimal-card">
           <div>
@@ -50,13 +52,36 @@ export const profileView = {
     const { state, endpoints, mutate, openModal } = ctx;
     const p = state.store.profile;
 
+    $('#profile-signout')?.addEventListener('click', async () => {
+      const button = $('#profile-signout'); button.disabled = true;
+      try { await ctx.signOut(); } catch (error) { ctx.toast(authMessage(error)); button.disabled = false; }
+    });
+    $('#profile-password')?.addEventListener('click', async () => {
+      const button = $('#profile-password'); button.disabled = true;
+      try { const { error } = await ctx.auth.forgot(p.email); if (error) throw error; ctx.toast('Confira seu e-mail para escolher uma nova senha.'); }
+      catch (error) { ctx.toast(authMessage(error)); }
+      finally { button.disabled = false; }
+    });
+    $('#profile-email')?.addEventListener('click', () => openModal({
+      title: 'Alterar e-mail', subtitle: 'Confirme a mudança pelos links enviados pelo Supabase.',
+      content: `<form id="account-email-form"><div class="field"><label for="account-email">Novo e-mail</label><input id="account-email" type="email" autocomplete="email" maxlength="254" required></div><button class="primary-btn" type="submit">Enviar confirmação</button></form>`,
+      onOpen({ close, root }) {
+        const form = root.querySelector('#account-email-form');
+        form.addEventListener('submit', async event => {
+          event.preventDefault(); if (!form.reportValidity()) return;
+          const button = form.querySelector('button'); button.disabled = true;
+          try { const { error } = await ctx.auth.updateEmail(root.querySelector('#account-email').value.trim()); if (error) throw error; close(); ctx.toast('Confira os e-mails de confirmação para concluir a mudança.'); }
+          catch (error) { ctx.toast(authMessage(error)); button.disabled = false; }
+        });
+      }
+    }));
     $('#profile-edit')?.addEventListener('click', () => {
       openModal({
         title: 'Dados pessoais',
         subtitle: 'Edite apenas as informações básicas do seu perfil.',
         content: `
           <div class="field"><label>Nome</label><input id="pf-name" value="${escapeHtml(p.name)}"></div>
-          <div class="field"><label>E-mail</label><input id="pf-email" type="email" value="${escapeHtml(p.email)}"></div>
+          <div class="field"><label>E-mail</label><input id="pf-email" type="email" value="${escapeHtml(p.email)}" ${state.storageMode === 'supabase' ? 'readonly' : ''}></div>
           <div class="field"><label>Data de início</label><input id="pf-date" type="date" value="${escapeHtml(p.startDate)}"></div>
           <button class="primary-btn" id="pf-save">Salvar alterações</button>
         `,

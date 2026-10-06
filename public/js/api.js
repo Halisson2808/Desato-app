@@ -1,13 +1,19 @@
+import { accessSession, auth } from './auth.js';
+let accountId = null;
+export function setAccountId(id) { accountId = id || null; }
 export async function api(path, options = {}) {
-  const config = {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    ...options
-  };
+  const expectedAccount = accountId;
+  const session = await accessSession();
+  if (expectedAccount !== accountId || (expectedAccount && session?.user?.id !== expectedAccount)) throw new Error('A conta mudou. Tente novamente na conta atual.');
+  const token = session?.access_token;
+  const config = { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) } };
   const res = await fetch(path, config);
-  const text = await res.text();
-  let data = {};
-  try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || 'Resposta inválida.' }; }
-  if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+  let data;
+  try { data = await res.json(); } catch { throw new Error('Resposta inválida do servidor. Reinicie o aplicativo.'); }
+  if (!res.ok) {
+    if (res.status === 401 && token) await auth.signOut().catch(() => {});
+    const error = new Error(data.error || `Erro ${res.status}`); error.status = res.status; throw error;
+  }
   return data;
 }
 

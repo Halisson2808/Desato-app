@@ -21,7 +21,7 @@ before(async () => {
   const port = probe.address().port;
   await new Promise(resolve => probe.close(resolve));
   base = `http://127.0.0.1:${port}`;
-  child = spawn(process.execPath, ['server.js'], { cwd: path.join(__dirname, '..'), env: { ...process.env, PORT: String(port), DATA_DIR: directory }, stdio: ['ignore', 'pipe', 'pipe'] });
+  child = spawn(process.execPath, ['server.js'], { cwd: path.join(__dirname, '..'), env: { ...process.env, PORT: String(port), DATA_DIR: directory, STORAGE_MODE: 'json' }, stdio: ['ignore', 'pipe', 'pipe'] });
   await new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error('Servidor não iniciou')), 60000);
     child.once('error', reject);

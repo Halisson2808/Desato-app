@@ -1,4 +1,6 @@
-import { endpoints } from './api.js';
+import { initializeAuth, auth } from './auth.js';
+import { authView } from './views/auth.js';
+import { endpoints, setAccountId } from './api.js';
 import { $, $$, escapeHtml } from './utils.js';
 import { homeView } from './views/home.js';
 import { routineView } from './views/routine.js';
@@ -46,10 +48,21 @@ const appState = {
   store: null,
   summary: null,
   loading: true,
+  authMode: new URLSearchParams(location.search).has('reset') ? 'reset' : 'login',
+  authFeedback: '',
+  authUser: null,
+  storageMode: 'supabase',
+  authReady: false,
   error: null,
   ui: { foodTab: 'hoje', routinePeriod: 'manha', supportGuideId: null, supportFavoritesOnly: false }
 };
 
+let accountGeneration = 0;
+let closeActiveModal = null;
+function showAuth(mode = 'login', message = '') {
+  appState.authMode = mode; appState.authFeedback = message;
+  appState.route = 'inicio'; render();
+}
 function setRoute(route) {
   if (!routes[route]) route = 'inicio';
   appState.route = route;
@@ -62,19 +75,20 @@ function setRoute(route) {
 function renderHeader() {
   const name = appState.store?.profile?.name || '';
   const initial = name.trim().slice(0, 1).toUpperCase();
+  const signedOut = appState.storageMode === 'supabase' && !appState.authUser;
   $('#app-header').innerHTML = `
     <div class="header-row">
       <button class="desato-brand" id="header-home" aria-label="Desato — ir para o início">
         <img class="desato-brand-mark" src="/icon.svg" width="40" height="40" alt="" aria-hidden="true">
         <span class="desato-wordmark">${APP_NAME}</span>
       </button>
-      <button class="profile-avatar-btn" id="header-profile" aria-label="Abrir perfil" title="Meu perfil">
-        ${initial ? escapeHtml(initial) : icon('profile')}
+      <button class="profile-avatar-btn" id="header-profile" aria-label="${signedOut ? 'Entrar na conta' : 'Abrir perfil'}" title="${signedOut ? 'Entrar' : 'Meu perfil'}">
+        ${signedOut ? icon('profile') : initial ? escapeHtml(initial) : icon('profile')}
       </button>
     </div>
   `;
   $('#header-home')?.addEventListener('click', () => setRoute('inicio'));
-  $('#header-profile')?.addEventListener('click', () => setRoute('perfil'));
+  $('#header-profile')?.addEventListener('click', () => signedOut ? showAuth() : setRoute('perfil'));
 }
 
 function renderNav() {
@@ -105,6 +119,7 @@ export function toast(message) {
 }
 
 export function openModal({ title, subtitle = '', content = '', onOpen }) {
+  closeActiveModal?.();
   const root = $('#modal-root');
   root.innerHTML = `
     <div class="modal-backdrop" id="modal-backdrop">
@@ -122,6 +137,7 @@ export function openModal({ title, subtitle = '', content = '', onOpen }) {
   const app = $('#app');
   app.inert = true;
   const close = () => {
+    if (closeActiveModal === close) closeActiveModal = null;
     document.removeEventListener('keydown', handleKeys);
     app.inert = false;
     root.innerHTML = '';
@@ -144,19 +160,24 @@ export function openModal({ title, subtitle = '', content = '', onOpen }) {
     if (control?.id) label.htmlFor = control.id;
   });
   root.querySelector('input, textarea, select, button')?.focus();
+  closeActiveModal = close;
   if (onOpen) onOpen({ close, root });
   return close;
 }
 
 async function refresh(silent = true) {
+  const generation = accountGeneration;
   try {
     const data = await endpoints.state();
+    if (generation !== accountGeneration) return;
     appState.store = data.store;
     appState.summary = data.summary;
     appState.loading = false;
     appState.error = null;
     render();
   } catch (error) {
+    if (generation !== accountGeneration) return;
+    if (error.status === 401) appState.store = null;
     appState.loading = false;
     appState.error = error.message;
     render();
@@ -170,11 +191,13 @@ export async function mutate(action, successMessage = '') {
   saving = true;
   const buttons = [...document.querySelectorAll('button:not([disabled])')];
   buttons.forEach(button => button.disabled = true);
+  const generation = accountGeneration;
   let committed = false;
   try {
     await action();
     committed = true;
     const data = await endpoints.state();
+    if (generation !== accountGeneration) return false;
     appState.store = data.store;
     appState.summary = data.summary;
     render();
@@ -190,9 +213,26 @@ export async function mutate(action, successMessage = '') {
 }
 
 function render() {
+  const loginVisible = appState.storageMode === 'supabase' && ((!appState.authReady && !['sos', 'apoio'].includes(appState.route)) || appState.authMode === 'reset' || (!appState.authUser && !['sos', 'apoio'].includes(appState.route)));
+  $('#app').classList.toggle('auth-shell', loginVisible);
+  if (loginVisible) {
+    $('#app-header').innerHTML = ''; $('#bottom-nav').innerHTML = '';
+    if (!appState.authReady) {
+      $('#view').innerHTML = `<div class="auth-loading"><img src="/icon.svg" width="48" height="48" alt="Desato"><p>${escapeHtml(appState.error || 'Preparando seu acesso…')}</p>${appState.error ? '<button class="primary-btn" id="auth-retry">Tentar novamente</button><button class="secondary-btn" id="auth-public-sos">Abrir SOS</button><button class="secondary-btn" id="auth-public-support">Ler orientações</button>' : ''}</div>`;
+      $('#auth-retry')?.addEventListener('click', () => location.reload());
+      $('#auth-public-sos')?.addEventListener('click', () => setRoute('sos'));
+      $('#auth-public-support')?.addEventListener('click', () => setRoute('apoio'));
+      return;
+    }
+    const ctx = { state: appState, auth, email: localStorage.getItem('desato-remember-email') || '', showAuth, navigate: setRoute, passwordChanged: async () => {
+      appState.authMode = 'login'; sessionStorage.removeItem('desato-password-recovery'); history.replaceState(null, '', '/#inicio');
+      appState.route = 'inicio'; await refresh(false); toast('Senha atualizada.');
+    } };
+    $('#view').innerHTML = authView.html(ctx); authView.bind(ctx); return;
+  }
   renderNav();
   renderHeader();
-  if (appState.loading || (!appState.store && !['sos', 'apoio'].includes(appState.route))) {
+  if ((appState.loading && !['sos', 'apoio'].includes(appState.route)) || (!appState.store && !['sos', 'apoio'].includes(appState.route))) {
     $('#view').innerHTML = appState.loading
       ? `<div class="card text-center"><p>Carregando...</p></div>`
       : `<div class="card"><h3>Não consegui carregar seus dados</h3><p>${escapeHtml(appState.error || 'Verifique a conexão com o servidor.')}</p><p>SOS e os guias de Apoio continuam disponíveis na navegação.</p><button class="primary-btn" id="retry">Tentar novamente</button></div>`;
@@ -208,7 +248,10 @@ function render() {
     openModal,
     navigate: setRoute,
     refresh,
-    appName: APP_NAME
+    appName: APP_NAME,
+    auth,
+    signOut: () => auth.signOut(),
+    showAuth
   };
   $('#view').innerHTML = view.html(ctx);
   view.bind?.(ctx);
@@ -224,12 +267,35 @@ window.addEventListener('hashchange', () => {
 });
 
 if (location.hash.replace('#','') in routes) appState.route = location.hash.replace('#','');
-refresh();
-window.addEventListener('online', () => refresh());
+async function start() {
+  render();
+  try {
+    const result = await initializeAuth((event, session) => {
+      if (!appState.authReady || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
+      if (event === 'PASSWORD_RECOVERY') { appState.authMode = 'reset'; render(); return; }
+      const nextId = session?.user?.id;
+      if (nextId === appState.authUser?.id && event === 'USER_UPDATED') { appState.authUser = session.user; refresh(false); return; }
+      if (nextId === appState.authUser?.id && event !== 'SIGNED_OUT') return;
+      accountGeneration += 1;
+      appState.store = null; appState.summary = null; appState.error = null;
+      appState.authUser = session?.user || null; setAccountId(session?.user?.id); appState.loading = Boolean(session);
+      appState.ui.supportGuideId = null; appState.ui.supportFavoritesOnly = false;
+      if (!session) { appState.route = 'inicio'; appState.authMode = 'login'; closeActiveModal?.(); $('#modal-root').innerHTML = ''; $('#toast-root').innerHTML = ''; $('#app').inert = false; render(); }
+      else { appState.authMode = 'login'; appState.route = 'inicio'; refresh(false); }
+    });
+    appState.storageMode = result.config.mode; appState.authUser = result.session?.user || null; setAccountId(result.session?.user?.id); appState.authReady = true;
+    if (result.recovery) appState.authMode = 'reset';
+    if (appState.authMode === 'reset' && !result.session) showAuth('login', 'O link de recuperação é inválido ou expirou. Solicite outro link.');
+    else if (result.config.mode === 'json' || result.session) await refresh(false);
+    else { appState.loading = false; render(); }
+  } catch (error) { appState.error = error.message; render(); }
+}
+start();
+window.addEventListener('online', () => { if (appState.storageMode === 'json' || appState.authUser) refresh(); });
 let currentDay = new Date().toDateString();
 setInterval(() => {
   const nextDay = new Date().toDateString();
-  if (nextDay !== currentDay) { currentDay = nextDay; refresh(); }
+  if (nextDay !== currentDay) { currentDay = nextDay; if (appState.storageMode === 'json' || appState.authUser) refresh(); }
 }, 30000);
 
 if ('serviceWorker' in navigator) {

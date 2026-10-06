@@ -3,9 +3,18 @@ const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
 const { randomUUID } = require('crypto');
+const { createCloud } = require('./lib/supabase.cjs');
+const cloudConfig = require('./config/supabase.json');
+const STORAGE_MODE = process.env.STORAGE_MODE || 'supabase';
+if (!['supabase', 'json'].includes(STORAGE_MODE)) throw new Error('STORAGE_MODE inválido.');
+const SUPABASE_URL = process.env.SUPABASE_URL || cloudConfig.url;
+const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || cloudConfig.publishableKey;
+if (!SUPABASE_KEY.startsWith('sb_publishable_')) throw new Error('Use apenas a chave pública publishable do Supabase.');
+const cloud = createCloud({ url: SUPABASE_URL, key: SUPABASE_KEY });
 
 const PORT = process.env.PORT || 4173;
 const HOST = process.env.HOST || '127.0.0.1';
+if (STORAGE_MODE === 'json' && !['127.0.0.1', 'localhost', '::1'].includes(HOST)) throw new Error('Modo JSON permitido apenas em endereço local.');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(__dirname, 'data');
 const STORE_FILE = path.join(DATA_DIR, 'store.json');
@@ -269,6 +278,18 @@ async function handleApi(req, res, pathname) {
   const method = req.method || 'GET';
   const body = ['POST', 'PUT', 'PATCH'].includes(method) ? await readBody(req) : {};
   if (!body || Array.isArray(body) || typeof body !== 'object') invalid('Envie um objeto JSON.');
+  if (pathname === '/api/config' && method === 'GET') return json(res, 200, { mode: STORAGE_MODE, supabaseUrl: SUPABASE_URL, publishableKey: SUPABASE_KEY });
+  if (pathname === '/api/health' && method === 'GET') return json(res, 200, { app: 'desato', mode: STORAGE_MODE });
+  if (STORAGE_MODE === 'supabase') {
+    const session = await cloud.authenticate(req);
+    if (method === 'GET' && ['/api/state', '/api/summary', '/api/support'].includes(pathname)) {
+      const store = await cloud.state(session, defaultStore);
+      if (pathname === '/api/state') return json(res, 200, { store, summary: summary(store) });
+      return json(res, 200, pathname === '/api/summary' ? summary(store) : { support: store.support });
+    }
+    await cloud.mutate(session, pathname, method, body, value => validDate(value ?? localISO()), supportGuides.map(guide => guide.id));
+    return json(res, 200, { ok: true });
+  }
   let store = readStore();
 
   if (pathname === '/api/state' && method === 'GET') {
@@ -480,11 +501,13 @@ function serveStatic(req, res, pathname) {
   });
 }
 
-ensureStore();
+if (STORAGE_MODE === 'json') ensureStore();
 
 const server = http.createServer(async (req, res) => {
   try {
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    const cloudOrigin = new URL(SUPABASE_URL).origin;
+    res.setHeader('Content-Security-Policy', `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' ${cloudOrigin} ${cloudOrigin.replace(/^http/, 'ws')}; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'`);
     res.setHeader('Referrer-Policy', 'same-origin');
     if (!['GET', 'HEAD'].includes(req.method) && req.headers.origin && req.headers.origin !== `http://${req.headers.host}`) {
       return json(res, 403, { error: 'Origem não autorizada.' });
@@ -504,5 +527,5 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`\nDesato App rodando em http://localhost:${PORT}`);
-  console.log(`Dados locais em ${STORE_FILE}\n`);
+  console.log(STORAGE_MODE === 'supabase' ? 'Dados por conta no Supabase.\n' : `Modo local de desenvolvimento: ${STORE_FILE}\n`);
 });

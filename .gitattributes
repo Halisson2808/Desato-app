@@ -1,2 +1,5 @@
 * text=auto
 *.bat text eol=crlf
+
+# SDK gerado: preserva strings e não verifica espaços internos de código minificado.
+public/vendor/** text eol=lf -whitespace

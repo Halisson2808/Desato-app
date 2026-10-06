@@ -8,7 +8,7 @@ O projeto já é um MVP full-stack local funcional. Não reescreva a interface d
 
 - SPA em HTML/CSS/JavaScript sem framework.
 - Backend Node com API REST local.
-- Persistência em `data/store.json`.
+- Persistência padrão no Supabase por conta. JSON apenas com `STORAGE_MODE=json` local.
 - Layout responsivo real:
   - sidebar em desktop;
   - bottom navigation no mobile;
@@ -50,4 +50,8 @@ O SOS também deve continuar como **um fluxo linear**, e não voltar a ser uma g
 
 ## Supabase — 06/10/2026
 
-Migração inicial aplicada no projeto `szvxlhubtvhazlzohpse` após autenticação da conta correta. Histórico de migrações e verificação remota confirmam 12 tabelas com RLS e trigger de cadastro. Oito testes SQL locais passaram. Consultar `SUPABASE_SETUP.md`. O aplicativo ainda não foi adaptado ao banco: persistência atual continua JSON. Próxima etapa é integrar sessões autenticadas e adaptar as rotas. Não reaplicar o SQL inicial nem enviar dados locais sem definir a conta destinatária.
+Migração inicial aplicada no projeto `szvxlhubtvhazlzohpse` após autenticação da conta correta. Histórico de migrações e verificação remota confirmam 12 tabelas com RLS e trigger de cadastro. Oito testes SQL locais passaram. Consultar `SUPABASE_SETUP.md`. O aplicativo agora foi integrado ao banco com Supabase Auth; todas as rotas de dados exigem sessão no modo padrão. A configuração de login está em `config/supabase.json` e a implementação de persistência em `lib/supabase.cjs`. Não reaplicar o SQL inicial nem enviar dados locais sem definir a conta destinatária.
+
+## Login — 06/10/2026
+
+Login, cadastro, recuperação, sessão persistente e saída implementados. Perfil inclui controles da conta; senhas ficam no Supabase Auth. O usuário informou que adicionou as duas URLs locais de redirecionamento. SDK do navegador empacotado em `public/vendor/supabase.js`. O histórico JSON antigo não foi importado. Nunca fazer fallback silencioso para JSON nem expor chave administrativa.
