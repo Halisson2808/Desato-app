@@ -83,9 +83,20 @@ const changes = { id:'changes', type:'multiple', title:'O que você gostaria de 
 ] };
 const funnelGoal = {...goal,title:'O que você quer mudar na sua relação com o álcool?',options:[
   {value:'understand',label:'Quero recuperar o controle'}, {value:'reduce',label:'Quero beber menos'},
-  {value:'quit',label:'Quero parar de beber'}, {value:'continue',label:'Quero manter a mudança que comecei'}
+  {value:'quit',label:'Quero parar de beber'}, {value:'continue',label:'Já comecei a beber menos e quero continuar'}
 ]};
-export const FUNNELS = QUIZZES.map(quiz => ({id:quiz.id,title:quiz.title,questions:[funnelGoal,...quiz.questions.slice(2,5),changes,spend,frequency]}));
+const drinkingContext = choice('drinkingContext','Em que momento você mais costuma beber?',[
+  ['afterwork','Depois do trabalho ou no fim do dia'],
+  ['social','Em festas ou encontros com outras pessoas'],
+  ['alone','Quando estou em casa, sozinho'],
+  ['emotions','Quando estou ansioso, estressado ou triste'],
+  ['varied','Em vários momentos, sem um padrão definido']
+]);
+export const FUNNELS = QUIZZES.map(quiz => {
+  const personalQuestions=quiz.questions.slice(2,5);
+  if(quiz.id==='consumo')personalQuestions[0]=drinkingContext;
+  return {id:quiz.id,title:quiz.title,questions:[funnelGoal,...personalQuestions,changes,spend,frequency]};
+});
 export function validateFunnel(quizId,answers,completed=false) {
   const quiz = FUNNELS.find(item => item.id === quizId);
   if (!quiz || !answers || typeof answers !== 'object' || Array.isArray(answers)) throw new Error('Respostas inválidas.');

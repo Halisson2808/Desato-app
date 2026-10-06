@@ -83,11 +83,11 @@ test('entrada é direta, sem catálogo, idade, login ou links de saída',async()
   app.event('#start');assert.equal(app.document.querySelectorAll('h1').length,1);
   assert.match(app.document.querySelector('h1').textContent,/O que você quer mudar/);
   assert.equal(app.document.querySelector('#number-form'),null);
-  app.event('[data-answer="reduce"]');assert.match(app.document.querySelector('h1').textContent,/Com que frequência/);
+  app.event('[data-answer="reduce"]');assert.match(app.document.querySelector('h1').textContent,/Em que momento/);
 });
 test('seleção única avança, checklist exige resposta e correção recalcula o resumo',async()=>{
   const app=await boot();app.event('#start');
-  for(const value of ['understand','weekly','sometimes','difficult'])app.event(`[data-answer="${value}"]`);
+  for(const value of ['understand','afterwork','sometimes','difficult'])app.event(`[data-answer="${value}"]`);
   assert.equal(app.document.querySelector('#next-multiple').disabled,true);
   app.event('[data-multiple="money"]');app.event('[data-multiple="energy"]');
   assert.equal(app.document.querySelector('[data-multiple="money"]').getAttribute('aria-pressed'),'true');
@@ -113,7 +113,7 @@ test('seleção única avança, checklist exige resposta e correção recalcula 
 });
 test('oferta com gasto zero mostra custo adicional em vez de inventar vantagem financeira',async()=>{
   const app=await boot();app.event('#start');
-  for(const value of ['quit','rare','never','notyet'])app.event(`[data-answer="${value}"]`);
+  for(const value of ['quit','social','never','notyet'])app.event(`[data-answer="${value}"]`);
   app.event('[data-multiple="control"]');app.event('#next-multiple');app.event('#custom-money');
   app.document.querySelector('#numeric-answer').value='0';app.event('#number-form','submit');app.event('[data-frequency="0"]');
   app.event('#see-offer');assert.match(app.document.querySelector('.net').textContent,/20,00/);

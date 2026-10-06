@@ -12,6 +12,8 @@ A abertura tem título, subtítulo, ilustração leve feita com CSS e um único 
 6. Gasto médio com bebidas por saída.
 7. Frequência semanal dessas saídas.
 
+No funil principal, a segunda pergunta passou a ser “Em que momento você mais costuma beber?”, evitando repetir a frequência que aparece no final. A quarta opção da primeira pergunta é “Já comecei a beber menos e quero continuar”.
+
 Seleção única avança imediatamente. Checklist permite várias escolhas e só habilita Continuar depois de uma seleção. Valores financeiros oferecem atalhos que avançam ao tocar e campos personalizados com validação. A seta interna permite corrigir etapas anteriores, preservando respostas.
 
 Depois das perguntas, a tela de impacto mostra gastos mensal/anual e média diária. O botão Conhecer meu próximo passo abre uma tela separada de oferta: objetivo em destaque, benefícios atuais, preço de referência de R$ 20/mês e cenários de economia líquida. O preço não foi confirmado e o checkout não foi criado. Consultar PLANEJAMENTO_OFERTA.md.
