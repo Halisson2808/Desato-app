@@ -57,6 +57,8 @@ Essa conta representa redução do gasto nas saídas, e não “50% de melhora d
 
 A tela permite comparar 25%, 50% e 100% de redução das saídas. Desconta o preço de referência da economia e mostra custo adicional quando a redução projetada não o cobre. Não apresenta economia negativa como benefício.
 
+Comparação visual simplificada: três cartões verticais — gasto hoje, gasto no cenário já incluindo Desato e valor que poderia sobrar. Dentro do segundo cartão, separar bebidas + assinatura. Os controles usam “25% menos”, “Metade” e “Sem essas saídas”. Exemplo verificado: R$ 650 hoje → R$ 325 em bebidas + R$ 20 Desato = R$ 345 no cenário → R$ 305 de economia possível.
+
 ## Fechamento a definir
 
 Quando a assinatura estiver pronta, a chamada recomendada é **“Quero começar com o Desato”**. Hoje a apresentação termina em “Assinatura em preparação”, sem pagamento ou botão que leve a um destino fictício.

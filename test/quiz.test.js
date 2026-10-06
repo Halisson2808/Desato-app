@@ -122,6 +122,18 @@ test('oferta com gasto zero mostra custo adicional em vez de inventar vantagem f
   assert.equal(app.document.querySelectorAll('a').length,0);
   assert.equal(app.document.querySelector('.offer-unavailable').disabled,true);
 });
+test('comparação mostra hoje, total incluindo assinatura e economia com decomposição clara',async()=>{
+  const app=await boot();app.event('#start');
+  for(const value of ['reduce','social','sometimes','difficult'])app.event(`[data-answer="${value}"]`);
+  app.event('[data-multiple="money"]');app.event('#next-multiple');app.event('#custom-money');
+  app.document.querySelector('#numeric-answer').value='150';app.event('#number-form','submit');app.event('[data-frequency="1"]');app.event('#see-offer');
+  assert.match(app.document.querySelector('.compare-today strong').textContent,/650,00/);
+  assert.match(app.document.querySelector('.compare-future strong').textContent,/345,00/);
+  assert.match(app.document.querySelector('.compare-breakdown').textContent,/325,00/);
+  assert.match(app.document.querySelector('.compare-breakdown').textContent,/20,00/);
+  assert.match(app.document.querySelector('.compare-saving .net').textContent,/305,00/);
+  assert.match(app.document.querySelector('[data-reduction="0.5"]').textContent,/Metade/);
+});
 test('os cinco links diretos abrem o funil correto sem tela de seleção',async()=>{
   const {FUNNELS}=await model;
   for(const quiz of FUNNELS){const app=await boot('/quiz/'+quiz.id);app.event('#start');app.event('[data-answer="reduce"]');assert.equal(app.document.querySelector('h1').textContent,quiz.questions[1].title);}
