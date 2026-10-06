@@ -109,3 +109,7 @@ Verificação desta etapa: **19 testes aprovados** em `npm test`, incluindo pers
 Criada a migração `supabase/migrations/20261006000100_desato_initial.sql`, com 12 tabelas por usuário, políticas RLS, validação e rotina inicial no cadastro. Oito testes PostgreSQL locais passaram, verificando isolamento, bloqueio anônimo, chaves compostas e exclusão em cascata. Detalhes em `SUPABASE_SETUP.md`.
 
 O Supabase recusou o vínculo ao projeto `szvxlhubtvhazlzohpse` por falta de privilégios das credenciais salvas na CLI. Nenhum SQL foi aplicado remotamente. O aplicativo continua usando JSON; login e adaptação das rotas permanecem como próximas etapas após a criação das tabelas.
+
+## Banco Supabase aplicado — 06/10/2026
+
+Após o usuário concluir o login da CLI, o projeto `szvxlhubtvhazlzohpse` foi vinculado. A migração `20261006000100_desato_initial.sql` foi aplicada, e o histórico remoto confirma a versão `20261006000100`. A consulta `supabase/verify.sql` confirmou as 12 tabelas protegidas por RLS e a trigger de cadastro. Nenhum histórico local foi importado. A pendência de acesso administrativo anterior foi resolvida; a adaptação do aplicativo e o login de usuários permanecem como próximas etapas.

@@ -8,9 +8,9 @@ URL: `https://szvxlhubtvhazlzohpse.supabase.co`.
 - CLI inicializada localmente e dependências de desenvolvimento instaladas.
 - Migração pronta em `supabase/migrations/20261006000100_desato_initial.sql`.
 - Oito testes SQL passaram em PostgreSQL embarcado (PGlite), incluindo isolamento real por RLS, validação e exclusão em cascata.
-- **Não aplicado remotamente:** a sessão salva na CLI não tem permissão para o projeto solicitado. `supabase link --project-ref szvxlhubtvhazlzohpse` foi recusado por falta de privilégios.
-- Nenhum projeto remoto foi alterado e nenhum histórico local foi enviado.
-- O aplicativo continua usando JSON. Criar o esquema não conecta automaticamente o frontend nem implementa login. A integração com sessões autenticadas será a próxima etapa, após confirmar a criação das tabelas.
+- **Aplicado remotamente:** após autenticar a conta correta, o vínculo ao projeto foi concluído e a migração `20261006000100` foi aplicada. O histórico local/remoto e `supabase/verify.sql` confirmaram 12 tabelas com RLS e trigger de cadastro.
+- Apenas o projeto `szvxlhubtvhazlzohpse` recebeu a estrutura. Nenhum histórico local foi enviado.
+- O aplicativo continua usando JSON. Criar o esquema não conecta automaticamente o frontend nem implementa login. A integração com sessões autenticadas será a próxima etapa, agora que a criação das tabelas foi confirmada.
 
 A chave publishable fornecida foi registrada em `.env.supabase.example`, como configuração pública para a futura integração. Esse arquivo não é carregado automaticamente e não contém senha ou chave administrativa.
 
@@ -37,7 +37,9 @@ Cadastros futuros recebem perfil, cálculo zerado e seis hábitos iniciais, sem 
 
 As tabelas têm prefixo `desato_` para separar esta estrutura de outros recursos do projeto. Não há tabela ou campo que permita ao cliente se declarar assinante; pagamentos serão definidos separadamente.
 
-## Opção A — SQL Editor
+## Instruções para uma instalação nova — SQL Editor
+
+O projeto informado **já recebeu esta migração**. Não execute novamente o SQL inicial nele. As instruções abaixo servem para outra instalação vazia autorizada.
 
 1. Entre no painel do projeto correto com uma conta que tenha permissão de edição.
 2. Abra SQL Editor e uma consulta nova.
@@ -65,7 +67,7 @@ Se aparecer “Could not create CLI login session”, a sessão de login não fo
 
 A CLI pode solicitar a senha do banco no terminal. Não cole senha, token pessoal ou `service_role` no chat ou em arquivos públicos. A URL com `[YOUR-PASSWORD]` é um modelo, não uma conexão utilizável.
 
-`supabase init` já foi executado; não precisa repetir nem usar `--force`.
+`supabase init`, o vínculo e a migração inicial já foram concluídos neste projeto; não precisa repetir nem usar `--force`. O comando `db push` passa a aplicar apenas futuras migrações pendentes.
 
 Se aplicar pelo SQL Editor primeiro e depois adotar a CLI, sincronize o histórico da migração antes de usar `db push`; não tente criar as mesmas tabelas novamente.
 
@@ -80,6 +82,6 @@ Os testes de banco usam PostgreSQL em memória e duas identidades fictícias. El
 
 ## Próxima etapa de integração
 
-Depois da criação remota: configurar login, enviar tokens de sessão nas chamadas, validar identidade no servidor e trocar cada rota de persistência por consultas das tabelas correspondentes. Não usar a chave publishable como autenticação de usuário nem colocar chave administrativa no navegador. A migração de dados pessoais existentes precisa de uma conta destinatária confirmada.
+Próxima etapa: configurar login, enviar tokens de sessão nas chamadas, validar identidade no servidor e trocar cada rota de persistência por consultas das tabelas correspondentes. Não usar a chave publishable como autenticação de usuário nem colocar chave administrativa no navegador. A migração de dados pessoais existentes precisa de uma conta destinatária confirmada.
 
 Referências técnicas: [CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) e [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security).

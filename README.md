@@ -143,9 +143,9 @@ Feche a janela do servidor, abra novamente `Abrir aplicativo.bat` e recarregue a
 
 Os guias de Apoio usam `.js`, servido como JavaScript inclusive por versões anteriores do servidor. Isso evita o bloqueio da interface causado por servidores antigos que entregavam `.mjs` como `application/octet-stream`.
 
-## Banco Supabase preparado
+## Banco Supabase criado
 
-A migração do Desato com 12 tabelas e isolamento por usuário está em `supabase/migrations/20261006000100_desato_initial.sql`. Os testes SQL estão disponíveis com `npm run db:test`. A criação remota depende de acesso ao projeto informado; a conta salva na CLI não tem permissão. O aplicativo continua usando JSON até a integração com autenticação. Consulte [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
+A migração do Desato com 12 tabelas e isolamento por usuário está em `supabase/migrations/20261006000100_desato_initial.sql`. Os testes SQL estão disponíveis com `npm run db:test`. A migração foi aplicada ao projeto `szvxlhubtvhazlzohpse`; as 12 tabelas, regras RLS e trigger de cadastro foram verificadas remotamente. O aplicativo continua usando JSON até a integração com autenticação. Consulte [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
 
 ## Repositório
 

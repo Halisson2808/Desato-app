@@ -50,4 +50,4 @@ O SOS também deve continuar como **um fluxo linear**, e não voltar a ser uma g
 
 ## Supabase — 06/10/2026
 
-Migração inicial e oito testes SQL preparados. Projeto alvo: `szvxlhubtvhazlzohpse`. CLI local inicializada, mas vínculo remoto recusado por falta de permissão da conta salva. Consultar `SUPABASE_SETUP.md`. Não presumir tabelas criadas remotamente ou aplicativo conectado: persistência atual continua JSON. Nunca vincular ou aplicar migração em outro projeto para contornar a falta de acesso.
+Migração inicial aplicada no projeto `szvxlhubtvhazlzohpse` após autenticação da conta correta. Histórico de migrações e verificação remota confirmam 12 tabelas com RLS e trigger de cadastro. Oito testes SQL locais passaram. Consultar `SUPABASE_SETUP.md`. O aplicativo ainda não foi adaptado ao banco: persistência atual continua JSON. Próxima etapa é integrar sessões autenticadas e adaptar as rotas. Não reaplicar o SQL inicial nem enviar dados locais sem definir a conta destinatária.
