@@ -32,7 +32,6 @@ export const auth = {
   forgot: email => client.auth.resetPasswordForEmail(email, { redirectTo: redirect(true) }),
   reset: password => client.auth.updateUser({ password }),
   updateEmail: email => client.auth.updateUser({ email }, { emailRedirectTo: redirect(false) }),
-  resend: email => client.auth.resend({ type: 'signup', email, options: { emailRedirectTo: redirect(false) } }),
   signOut: async () => {
     sessionStorage.removeItem('desato-password-recovery');
     const { error } = await client.auth.signOut({ scope: 'local' });
@@ -42,7 +41,7 @@ export const auth = {
 export function authMessage(error) {
   const message = error?.message || '';
   if (/invalid login credentials/i.test(message)) return 'E-mail ou senha incorretos.';
-  if (/email not confirmed/i.test(message)) return 'Confirme seu e-mail antes de entrar. Você pode reenviar a confirmação abaixo.';
+  if (/email not confirmed/i.test(message)) return 'Confirme o cadastro pelo link enviado ao seu e-mail antes de entrar.';
   if (/password|weak_password/i.test(message)) return 'Use uma senha com pelo menos 8 caracteres. Confira os requisitos informados pelo Supabase.';
   if (/rate limit|too many|security purposes/i.test(message)) return 'Muitas tentativas. Aguarde um pouco e tente novamente.';
   if (/email address.*not authorized|email.*sending|smtp/i.test(message)) return 'O serviço de e-mail ainda precisa ser configurado no Supabase para este endereço.';

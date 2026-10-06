@@ -15,7 +15,7 @@ async function request(route, method = 'GET', body) {
   return { status: response.status, data: await response.json() };
 }
 before(async () => {
-  directory = fs.mkdtempSync(path.join(os.tmpdir(), 'companheiro-test-'));
+  directory = fs.mkdtempSync(path.join(os.tmpdir(), 'desato-test-'));
   const probe = net.createServer();
   await new Promise(resolve => probe.listen(0, '127.0.0.1', resolve));
   const port = probe.address().port;
@@ -186,4 +186,20 @@ test('logo e módulos de Apoio são servidos com tipos aceitos pelo navegador', 
     assert.ok(response.headers.get('content-type').startsWith('application/javascript'), asset);
     assert.equal((await response.text()).includes('<!doctype html>'), false);
   }
+});
+
+test('site, app e cinco rotas de quiz públicos servem as páginas corretas', async () => {
+  const pages = [['/', '/js/site.js'], ['/app','/js/app.js'], ...['consumo','vontade','gatilhos','impacto','retomada'].map(id => ['/quiz/'+id,'/js/quiz.js']), ['/quiz','/js/quiz.js']];
+  for (const [route,script] of pages) { const response = await fetch(base+route); assert.equal(response.status,200); assert.match(response.headers.get('content-type'),/text\/html/); assert.ok((await response.text()).includes(script)); }
+});
+test('quiz local valida respostas e preserva histórico e dinheiro ao salvar', async () => {
+  const model = await import('data:text/javascript;base64,' + Buffer.from(fs.readFileSync(path.join(__dirname,'../public/js/quiz-model.js'),'utf8')).toString('base64'));
+  const quiz = model.QUIZZES[0];
+  const answers = Object.fromEntries(quiz.questions.map(q => [q.id,q.options ? q.options[0].value : q.id === 'spend' ? 80 : 2]));
+  const before = (await request('/api/state')).data.store;
+  assert.equal((await request('/api/quiz','POST',{quizId:quiz.id,answers:{}})).status,400);
+  assert.equal((await request('/api/quiz','POST',{quizId:quiz.id,answers})).status,200);
+  assert.equal((await request('/api/quiz')).data.quizzes[0].answers.spend,80);
+  const after = (await request('/api/state')).data.store;
+  assert.deepEqual(after.checkins,before.checkins); assert.deepEqual(after.money,before.money);
 });

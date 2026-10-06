@@ -59,6 +59,7 @@ const appState = {
 
 let accountGeneration = 0;
 let closeActiveModal = null;
+const returnToQuiz = new URLSearchParams(location.search).get('next') === 'quiz';
 function showAuth(mode = 'login', message = '') {
   appState.authMode = mode; appState.authFeedback = message;
   appState.route = 'inicio'; render();
@@ -213,19 +214,17 @@ export async function mutate(action, successMessage = '') {
 }
 
 function render() {
-  const loginVisible = appState.storageMode === 'supabase' && ((!appState.authReady && !['sos', 'apoio'].includes(appState.route)) || appState.authMode === 'reset' || (!appState.authUser && !['sos', 'apoio'].includes(appState.route)));
+  const loginVisible = appState.storageMode === 'supabase' && (!appState.authReady || appState.authMode === 'reset' || !appState.authUser);
   $('#app').classList.toggle('auth-shell', loginVisible);
   if (loginVisible) {
     $('#app-header').innerHTML = ''; $('#bottom-nav').innerHTML = '';
     if (!appState.authReady) {
-      $('#view').innerHTML = `<div class="auth-loading"><img src="/icon.svg" width="48" height="48" alt="Desato"><p>${escapeHtml(appState.error || 'Preparando seu acesso…')}</p>${appState.error ? '<button class="primary-btn" id="auth-retry">Tentar novamente</button><button class="secondary-btn" id="auth-public-sos">Abrir SOS</button><button class="secondary-btn" id="auth-public-support">Ler orientações</button>' : ''}</div>`;
+      $('#view').innerHTML = `<div class="auth-loading"><img src="/icon.svg" width="48" height="48" alt="Desato"><p>${escapeHtml(appState.error || 'Preparando seu acesso…')}</p>${appState.error ? '<button class="primary-btn" id="auth-retry">Tentar novamente</button>' : ''}</div>`;
       $('#auth-retry')?.addEventListener('click', () => location.reload());
-      $('#auth-public-sos')?.addEventListener('click', () => setRoute('sos'));
-      $('#auth-public-support')?.addEventListener('click', () => setRoute('apoio'));
       return;
     }
     const ctx = { state: appState, auth, email: localStorage.getItem('desato-remember-email') || '', showAuth, navigate: setRoute, passwordChanged: async () => {
-      appState.authMode = 'login'; sessionStorage.removeItem('desato-password-recovery'); history.replaceState(null, '', '/#inicio');
+      appState.authMode = 'login'; sessionStorage.removeItem('desato-password-recovery'); history.replaceState(null, '', '/app#inicio');
       appState.route = 'inicio'; await refresh(false); toast('Senha atualizada.');
     } };
     $('#view').innerHTML = authView.html(ctx); authView.bind(ctx); return;
@@ -281,9 +280,10 @@ async function start() {
       appState.authUser = session?.user || null; setAccountId(session?.user?.id); appState.loading = Boolean(session);
       appState.ui.supportGuideId = null; appState.ui.supportFavoritesOnly = false;
       if (!session) { appState.route = 'inicio'; appState.authMode = 'login'; closeActiveModal?.(); $('#modal-root').innerHTML = ''; $('#toast-root').innerHTML = ''; $('#app').inert = false; render(); }
-      else { appState.authMode = 'login'; appState.route = 'inicio'; refresh(false); }
+      else { if (returnToQuiz) { location.assign('/quiz?retomar=1'); return; } appState.authMode = 'login'; appState.route = 'inicio'; refresh(false); }
     });
     appState.storageMode = result.config.mode; appState.authUser = result.session?.user || null; setAccountId(result.session?.user?.id); appState.authReady = true;
+    if (returnToQuiz && result.session && !result.recovery) { location.assign('/quiz?retomar=1'); return; }
     if (result.recovery) appState.authMode = 'reset';
     if (appState.authMode === 'reset' && !result.session) showAuth('login', 'O link de recuperação é inválido ou expirou. Solicite outro link.');
     else if (result.config.mode === 'json' || result.session) await refresh(false);

@@ -6,16 +6,17 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
-async function boot(session = null, recovery = false) {
+async function boot(session = null, recovery = false, search = '') {
   const { document } = parseHTML('<html><body><div id="app"><header id="app-header"></header><main id="view" tabindex="-1"></main><nav id="bottom-nav"></nav></div><div id="modal-root"></div><div id="toast-root"></div></body></html>');
   const entries = new Map();
   const storage = { getItem: key => entries.get(key) || null, setItem: (key, value) => entries.set(key, String(value)), removeItem: key => entries.delete(key) };
   let active = session;
   const listeners = [];
   const timers = [];
+  const redirects = [];
   const store = id => ({ profile: { name: id === 'alice' ? 'Alice' : 'Bob', email: `${id}@example.test`, startDate: '2026-10-06', goal: '' }, money: { spendPerOuting: 0, outingsPerWeek: 0 }, checkins: {}, routine: { tasks: [], completions: {} }, hydration: {}, groceries: [], sos: { sessions: [] }, support: { plan: null, favoriteGuideIds: [] } });
   const context = vm.createContext({ document, localStorage: storage, sessionStorage: storage, URLSearchParams, URL, console,
-    location: { origin: 'http://localhost:4173', hash: '', search: '', reload() {} },
+    location: { origin: 'http://localhost:4173', hash: '', search, reload() {}, assign: value => redirects.push(value) },
     history: { replaceState() {} }, window: { scrollTo() {}, addEventListener() {} }, navigator: {},
     setTimeout: fn => { timers.push(fn); return 1; }, setInterval() {},
     __init: async onChange => { listeners.push(onChange); return { config: { mode: 'supabase' }, session: active, recovery }; },
@@ -35,7 +36,7 @@ async function boot(session = null, recovery = false) {
   const flush = () => new Promise(resolve => setImmediate(resolve));
   await flush(); await flush();
   const click = selector => document.querySelector(selector).dispatchEvent(new document.defaultView.Event('click'));
-  return { document, entries, listeners, timers, context, click, flush, setSession(value) { active = value; } };
+  return { document, entries, listeners, timers, redirects, context, click, flush, setSession(value) { active = value; } };
 
 }
 
@@ -54,11 +55,27 @@ test('sem sessão abre login padrão e mantém senha fora do armazenamento', asy
   assert.equal(app.document.querySelector('#auth-confirm').getAttribute('autocomplete'), 'new-password');
 });
 
-test('SOS permanece disponível sem fazer login', async () => {
+test('login solicitado pelo quiz volta ao resultado após restaurar ou iniciar sessão', async () => {
+  const session = { user:{id:'alice',email:'alice@example.test'},access_token:'token' };
+  const restored = await boot(session,false,'?next=quiz');
+  assert.deepEqual(restored.redirects,['/quiz?retomar=1']);
+  const signedOut = await boot(null,false,'?next=quiz');
+  assert.equal(signedOut.redirects.length,0);
+  signedOut.setSession(session); signedOut.listeners.forEach(listener => listener('SIGNED_IN',session));
+  await signedOut.flush(); assert.deepEqual(signedOut.redirects,['/quiz?retomar=1']);
+});
+
+test('telas de acesso mostram somente conta e senha, sem reenvio ou atalhos de apoio', async () => {
   const app = await boot();
-  app.click('[data-auth-public="sos"]');
-  assert.ok(app.document.querySelector('#sos-flow'));
-  assert.equal(app.document.querySelector('#app').classList.contains('auth-shell'), false);
+  for (const mode of ['login','signup','forgot']) {
+    if (mode !== 'login') app.click(`[data-auth-mode="${mode}"]`);
+    assert.ok(app.document.querySelector('#auth-form'));
+    assert.equal(app.document.querySelector('#auth-resend'),null);
+    assert.equal(app.document.querySelector('[data-auth-public]'),null);
+    assert.equal(app.document.querySelector('.auth-help'),null);
+    assert.doesNotMatch(app.document.querySelector('#view').textContent,/Precisa de apoio|Abrir SOS|Ler orientações|Reenviar confirmação/);
+    if (mode !== 'login') app.click('[data-auth-mode="login"]');
+  }
 });
 
 test('sessão restaurada abre painel; sair e trocar conta não reutiliza dados', async () => {

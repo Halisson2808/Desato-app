@@ -2,6 +2,8 @@
 
 ## Estado atual
 
+Pasta atual: `Desato App`. Documentação reunida em `docs`; README da raiz serve como índice. O site fica em `/`, os quizzes em `/quiz` e o aplicativo em `/app`. Não recriar a pasta com o nome antigo. O prompt em `docs/PROMPT_PARA_CODEX.txt` é histórico e contém premissas anteriores.
+
 O projeto já é um MVP full-stack local funcional. Não reescreva a interface do zero.
 
 ### O que já está pronto
@@ -25,9 +27,9 @@ O projeto já é um MVP full-stack local funcional. Não reescreva a interface d
 
 A marca escolhida pelo usuário é **Desato**. Na interface, `APP_NAME = 'Desato'`; em títulos, manifesto e metadados de descoberta, usar **Desato App**. Manter a escrita consistente.
 
-## Quiz a implementar
+## Site e quizzes implementados
 
-Antes de criar o quiz, consultar `PLANEJAMENTO_QUIZ.md`. O usuário pediu duas perguntas financeiras consecutivas (gasto médio por saída e frequência semanal), seguidas de uma comparação visual de gasto e economia projetada. A assinatura de aproximadamente R$ 20/mês é uma hipótese de planejamento, ainda não um preço final ou cobrança implementada.
+Site público na raiz, cinco quizzes em `/quiz` e aplicativo em `/app`. Cada quiz tem sete perguntas, com gasto/frequência consecutivos e resultado orientativo e financeiro. Respostas podem ser salvas por conta na tabela existente de quiz; calculadora só atualiza mediante opção explícita. Consultar `SITE_E_QUIZZES.md` e `PLANEJAMENTO_QUIZ.md`. Assinatura de R$ 20/mês continua hipótese; sem cobrança. Não atribuir diagnóstico ou classificação clínica a estas perguntas não validadas.
 
 ## Aba Apoio implementada
 
@@ -35,12 +37,7 @@ A aba **Apoio** substitui Perfil na navegação principal e está implementada c
 
 ## Prioridade para implementação real
 
-1. Trocar `data/store.json` por banco de dados.
-2. Criar autenticação.
-3. Vincular todos os dados a `user_id`.
-4. Implementar assinatura/pagamento.
-5. Criar ambiente de produção e variáveis de ambiente.
-6. Manter o frontend e os fluxos existentes salvo instrução explícita para redesenhar.
+Banco, autenticação e vínculo por `user_id` já foram implementados. Antes de priorizar cobrança, consultar `PESQUISA_E_PLANO_DESATO.md`: a pesquisa de 06/10/2026 recomenda reforçar o foco em vontade de beber, gatilhos, plano por situação, resultado do SOS e retomada após consumo. A navegação proposta e a redução do destaque de Alimentação são planejamento; ainda não foram implementadas. Manter os fluxos existentes até uma solicitação de implementação.
 
 ## Regra importante
 
@@ -53,5 +50,7 @@ O SOS também deve continuar como **um fluxo linear**, e não voltar a ser uma g
 Migração inicial aplicada no projeto `szvxlhubtvhazlzohpse` após autenticação da conta correta. Histórico de migrações e verificação remota confirmam 12 tabelas com RLS e trigger de cadastro. Oito testes SQL locais passaram. Consultar `SUPABASE_SETUP.md`. O aplicativo agora foi integrado ao banco com Supabase Auth; todas as rotas de dados exigem sessão no modo padrão. A configuração de login está em `config/supabase.json` e a implementação de persistência em `lib/supabase.cjs`. Não reaplicar o SQL inicial nem enviar dados locais sem definir a conta destinatária.
 
 ## Login — 06/10/2026
+
+Tela de acesso simplificada a pedido do usuário: entrar, criar conta e esqueci a senha. Removidos reenvio de confirmação, bloco de apoio e atalhos públicos para SOS/orientações, inclusive na falha de inicialização. A confirmação de cadastro continua definida pelo Supabase; não desativar essa configuração apenas porque o botão foi removido. Recuperação de senha permanece funcional. As funções internas do aplicativo não foram removidas por esta alteração da tela de login.
 
 Login, cadastro, recuperação, sessão persistente e saída implementados. Perfil inclui controles da conta; senhas ficam no Supabase Auth. O usuário informou que adicionou as duas URLs locais de redirecionamento. SDK do navegador empacotado em `public/vendor/supabase.js`. O histórico JSON antigo não foi importado. Nunca fazer fallback silencioso para JSON nem expor chave administrativa.

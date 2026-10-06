@@ -1,5 +1,5 @@
-const CACHE = 'app-mvp-v7';
-const ASSETS = ['/', '/styles.css', '/js/app.js', '/js/api.js', '/js/utils.js',
+const CACHE = 'app-mvp-v9';
+const ASSETS = ['/', '/app', '/quiz', '/site.css', '/js/site.js', '/js/quiz.js', '/js/quiz-model.js', '/styles.css', '/js/app.js', '/js/api.js', '/js/utils.js',
   '/js/views/home.js', '/js/views/routine.js', '/js/views/sos.js',
   '/js/views/food.js', '/js/views/profile.js', '/js/views/support.js',
   '/js/content/support-guides.js', '/js/auth.js', '/js/views/auth.js', '/vendor/supabase.js', '/icon.svg', '/manifest.webmanifest'];
@@ -22,7 +22,7 @@ self.addEventListener('fetch', event => {
   }).catch(async () => {
     const cached = await caches.match(event.request);
     if (cached) return cached;
-    if (event.request.mode === 'navigate') return caches.match('/');
+    if (event.request.mode === 'navigate') return caches.match(url.pathname.startsWith('/quiz') ? '/quiz' : url.pathname.startsWith('/app') ? '/app' : '/');
     return Response.error();
   }));
 });

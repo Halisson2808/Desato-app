@@ -21,6 +21,7 @@ const STORE_FILE = path.join(DATA_DIR, 'store.json');
 // Carrega o mesmo conteúdo ESM do navegador sem alterar o servidor CommonJS.
 const supportGuidesSource = fs.readFileSync(path.join(PUBLIC_DIR, 'js/content/support-guides.js'), 'utf8');
 const supportGuidesModule = import('data:text/javascript;base64,' + Buffer.from(supportGuidesSource).toString('base64'));
+const quizModule = import('data:text/javascript;base64,' + Buffer.from(fs.readFileSync(path.join(PUBLIC_DIR, 'js/quiz-model.js'), 'utf8')).toString('base64'));
 
 const mime = {
   '.html': 'text/html; charset=utf-8',
@@ -282,6 +283,11 @@ async function handleApi(req, res, pathname) {
   if (pathname === '/api/health' && method === 'GET') return json(res, 200, { app: 'desato', mode: STORAGE_MODE });
   if (STORAGE_MODE === 'supabase') {
     const session = await cloud.authenticate(req);
+    if (pathname === '/api/quiz' && method === 'GET') return json(res, 200, { quizzes: await cloud.quizzes(session) });
+    if (pathname === '/api/quiz' && method === 'POST') {
+      try { body.answers = (await quizModule).validateAnswers(body.quizId, body.answers); }
+      catch (error) { invalid(error.message); }
+    }
     if (method === 'GET' && ['/api/state', '/api/summary', '/api/support'].includes(pathname)) {
       const store = await cloud.state(session, defaultStore);
       if (pathname === '/api/state') return json(res, 200, { store, summary: summary(store) });
@@ -291,6 +297,17 @@ async function handleApi(req, res, pathname) {
     return json(res, 200, { ok: true });
   }
   let store = readStore();
+
+  if (pathname === '/api/quiz' && method === 'GET') return json(res, 200, { quizzes: Object.values(store.quizzes || {}) });
+  if (pathname === '/api/quiz' && method === 'POST') {
+    let answers;
+    try { answers = (await quizModule).validateAnswers(body.quizId, body.answers); }
+    catch (error) { invalid(error.message); }
+    if (!store.quizzes) store.quizzes = {};
+    store.quizzes[body.quizId] = { quiz_version: `${body.quizId}-v1`, answers, updated_at: new Date().toISOString() };
+    writeStore(store);
+    return json(res, 200, { ok: true });
+  }
 
   if (pathname === '/api/state' && method === 'GET') {
     return json(res, 200, { store, summary: summary(store) });
@@ -464,7 +481,7 @@ async function handleApi(req, res, pathname) {
 }
 
 function serveStatic(req, res, pathname) {
-  let requested = pathname === '/' ? '/index.html' : pathname;
+  let requested = pathname === '/' ? '/site.html' : /^\/quiz(?:\/|$)/.test(pathname) ? '/quiz.html' : /^\/app(?:\/|$)/.test(pathname) ? '/index.html' : pathname;
   requested = decodeURIComponent(requested);
   const safe = path.normalize(requested).replace(/^([.][.][\/\\])+/, '');
   let filePath = path.join(PUBLIC_DIR, safe);

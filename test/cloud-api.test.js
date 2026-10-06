@@ -80,6 +80,18 @@ test('contas salvam no Supabase e não recebem estado de outra conta', async () 
   assert.equal((await request('/api/state','GET',undefined,'valid-alice')).data.store.checkins['2026-10-06'].status, 'clean');
 });
 
+test('quiz exige conta, valida respostas e não permite acesso ao resultado de outro usuário', async () => {
+  const model = await import('data:text/javascript;base64,' + Buffer.from(fs.readFileSync(path.join(root,'public/js/quiz-model.js'),'utf8')).toString('base64'));
+  const quiz = model.QUIZZES[0];
+  const answers = Object.fromEntries(quiz.questions.map(q => [q.id,q.options ? q.options[0].value : 0]));
+  assert.equal((await request('/api/quiz')).status,401);
+  assert.equal((await request('/api/quiz','POST',{quizId:quiz.id,answers})).status,401);
+  assert.equal((await request('/api/quiz','POST',{quizId:quiz.id,answers:{}},'valid-alice')).status,400);
+  assert.equal((await request('/api/quiz','POST',{quizId:quiz.id,answers,user_id:'bob'},'valid-alice')).status,200);
+  assert.equal((await request('/api/quiz','GET',undefined,'valid-alice')).data.quizzes.length,1);
+  assert.equal((await request('/api/quiz','GET',undefined,'valid-bob')).data.quizzes.length,0);
+});
+
 test('interface, SDK e login são servidos localmente como JavaScript', async () => {
   for (const asset of ['/vendor/supabase.js','/js/auth.js','/js/views/auth.js']) {
     const response = await fetch(base+asset); assert.equal(response.status, 200);

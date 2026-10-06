@@ -37,6 +37,9 @@ export const profileView = {
 
       ${state.storageMode === 'supabase' ? `<section class="section profile-settings-section"><div class="section-head"><div><h3>Acesso à conta</h3><p>Gerencie seu e-mail e sua senha.</p></div></div><div class="settings-list clean-settings"><button class="setting-row" id="profile-email"><div class="setting-icon">@</div><div class="setting-copy"><strong>Alterar e-mail</strong><span>Confirmação pelo Supabase</span></div><span class="chev">›</span></button><button class="setting-row" id="profile-password"><div class="setting-icon">✦</div><div class="setting-copy"><strong>Redefinir senha</strong><span>Receber um link no meu e-mail</span></div><span class="chev">›</span></button><button class="setting-row" id="profile-signout"><div class="setting-icon">↪</div><div class="setting-copy"><strong>Sair da conta</strong><span>Encerrar o acesso neste navegador</span></div><span class="chev">›</span></button></div></section>` : ''}
       <section class="section">
+        <div class="card"><h3>Meu ponto de partida</h3><p>Reflita sobre consumo, vontade de beber, gatilhos, impactos ou retomada.</p><a href="/quiz" class="section-link">Responder um quiz ou ver resultados salvos →</a></div>
+      </section>
+      <section class="section">
         <div class="card profile-minimal-card">
           <div>
             <span class="profile-minimal-label">SEU ACOMPANHAMENTO</span>

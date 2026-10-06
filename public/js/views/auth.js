@@ -24,14 +24,12 @@ export const authView = {
         ${mode === 'login' ? '<div class="auth-options"><label><input id="auth-remember" type="checkbox" checked> Lembrar meu e-mail</label><button type="button" data-auth-mode="forgot">Esqueci a senha</button></div>' : ''}
         <button class="primary-btn auth-submit" type="submit" id="auth-submit">${submit}</button>
       </form>
-      ${mode === 'login' ? '<p class="auth-switch">Ainda não tem conta? <button data-auth-mode="signup">Criar conta</button></p><button class="auth-resend" id="auth-resend">Reenviar confirmação de e-mail</button>' : mode !== 'reset' ? '<p class="auth-switch"><button data-auth-mode="login">Voltar para entrar</button></p>' : ''}
-      <div class="auth-help"><span>Precisa de apoio agora?</span><button data-auth-public="sos">Abrir SOS</button><button data-auth-public="apoio">Ler orientações</button></div>
+      ${mode === 'login' ? '<p class="auth-switch">Ainda não tem conta? <button data-auth-mode="signup">Criar conta</button></p>' : mode !== 'reset' ? '<p class="auth-switch"><button data-auth-mode="login">Voltar para entrar</button></p>' : ''}
     </div></section>`;
   },
   bind(ctx) {
     const mode = ctx.state.authMode || 'login';
     $$('[data-auth-mode]').forEach(button => button.addEventListener('click', () => ctx.showAuth(button.dataset.authMode)));
-    $$('[data-auth-public]').forEach(button => button.addEventListener('click', () => ctx.navigate(button.dataset.authPublic)));
     $$('[data-toggle-password]').forEach(button => button.addEventListener('click', () => {
       const input = $(`#${button.dataset.togglePassword}`);
       const visible = input.type === 'password'; input.type = visible ? 'text' : 'password';
@@ -72,10 +70,5 @@ export const authView = {
       });
     });
     $('#auth-confirm')?.addEventListener('input', event => event.target.setCustomValidity(''));
-    $('#auth-resend')?.addEventListener('click', () => run(async () => {
-      const input = $('#auth-email'); if (!input.reportValidity()) return;
-      const { error } = await ctx.auth.resend(input.value.trim()); if (error) throw error;
-      feedback('Se o cadastro precisar de confirmação, enviaremos um novo e-mail.');
-    }));
   }
 };
