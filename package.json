@@ -1,0 +1,23 @@
+{
+  "name": "desato-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Desato App: acompanhamento diário, rotina e apoio à mudança de hábitos relacionados ao consumo de álcool.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node --test",
+    "db:test": "node --test test/database.test.js",
+    "db:init": "supabase init",
+    "db:login": "supabase login",
+    "db:link": "supabase link --project-ref szvxlhubtvhazlzohpse",
+    "db:push": "supabase db push"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "supabase": "2.119.0"
+  }
+}

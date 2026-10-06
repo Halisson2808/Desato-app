@@ -1,0 +1,15 @@
+Analise este projeto inteiro antes de alterar qualquer coisa. Ele já é um MVP funcional e responsivo.
+
+Objetivo: evoluir a base existente, não recriar do zero.
+
+Regras:
+1. Preserve as 5 abas: Início, Rotina, SOS, Alimentação e Perfil.
+2. Preserve o comportamento responsivo: sidebar no desktop e navegação inferior no celular.
+3. Preserve o SOS como um processo linear de 5 passos, sem voltar a criar vários botões/ferramentas independentes.
+4. O Perfil deve continuar simples: dados pessoais + objetivo, salvo nova solicitação.
+5. A calculadora de economia fica no Início.
+6. Substitua gradualmente a persistência JSON por banco de dados e autenticação quando solicitado.
+7. Não reescreva o frontend sem necessidade.
+8. O nome do produto ainda é provisório e está centralizado na constante APP_NAME em public/js/app.js.
+
+Antes de codificar qualquer mudança futura, liste quais arquivos serão alterados e por quê.

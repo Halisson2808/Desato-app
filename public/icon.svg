@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>Desato</title>
+  <defs><linearGradient id="desato-green" x1="8" y1="4" x2="58" y2="64" gradientUnits="userSpaceOnUse"><stop stop-color="#13755B"/><stop offset="1" stop-color="#073F35"/></linearGradient></defs>
+  <rect width="64" height="64" rx="18" fill="url(#desato-green)"/>
+  <path d="M22 19V46H31C41 46 47 40 47 32C47 24 41 18 31 18" stroke="#F5FFF9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M18 32H33" stroke="#A9E8C8" stroke-width="5" stroke-linecap="round"/>
+</svg>

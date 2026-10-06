@@ -1,0 +1,15 @@
+{
+  "name": "Desato App",
+  "short_name": "Desato",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f7f5",
+  "theme_color": "#0b5d4b",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
