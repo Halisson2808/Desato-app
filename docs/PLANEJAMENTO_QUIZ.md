@@ -1,6 +1,6 @@
 # Desato App — Planejamento do quiz
 
-Registrado em 01/10/2026 a pedido do usuário. Atualização de 06/10/2026: o site e cinco versões de sete perguntas estão implementados; detalhes em [SITE_E_QUIZZES.md](SITE_E_QUIZZES.md). A cobrança ainda não foi implementada. Os requisitos abaixo guardam o planejamento original e a base das fórmulas utilizadas.
+Registrado em 01/10/2026 a pedido do usuário. Atualização de 06/10/2026: interface refeita como funil direto, com sete perguntas e cinco versões por links, sem catálogo ou navegação externa. Coleta no banco e checkout foram adiados expressamente pelo usuário; a interface atual não apresenta assinatura hipotética na comparação. Detalhes em [SITE_E_QUIZZES.md](SITE_E_QUIZZES.md). Os requisitos abaixo guardam o planejamento original e a base das fórmulas; não são todos requisitos da tela atual.
 
 ## Marca aprovada
 

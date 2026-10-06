@@ -20,6 +20,13 @@ before(async () => {
   fs.writeFileSync(path.join(directory, 'store.json'), '{dados locais não devem ser lidos');
   fake = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
+    if (url.pathname === '/rest/v1/rpc/desato_record_funnel' && req.method === 'POST') {
+      assert.equal(req.headers.apikey,'sb_publishable_test');
+      assert.equal(req.headers.authorization,undefined);
+      let text='';for await(const chunk of req) text+=chunk;
+      const body=JSON.parse(text);records.set('last-funnel',body);
+      return answer(res,200,true);
+    }
     const token = req.headers.authorization;
     const owner = token === 'Bearer valid-alice' ? 'alice' : token === 'Bearer valid-bob' ? 'bob' : null;
     if (!owner) return answer(res, 401, { error: 'Invalid token' });
@@ -47,7 +54,7 @@ before(async () => {
   const probe = net.createServer(); await new Promise(resolve => probe.listen(0, '127.0.0.1', resolve));
   const port = probe.address().port; await new Promise(resolve => probe.close(resolve));
   base = `http://127.0.0.1:${port}`;
-  child = spawn(process.execPath, ['server.js'], { cwd: root, env: { ...process.env, PORT: String(port), DATA_DIR: directory, STORAGE_MODE: 'supabase', SUPABASE_URL: `http://127.0.0.1:${fake.address().port}`, SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test' }, stdio: ['ignore','pipe','pipe'] });
+  child = spawn(process.execPath, ['server.js'], { cwd: root, env: { ...process.env, PORT: String(port), DATA_DIR: directory, STORAGE_MODE: 'supabase', FUNNEL_ENABLED:'true', SUPABASE_URL: `http://127.0.0.1:${fake.address().port}`, SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test' }, stdio: ['ignore','pipe','pipe'] });
   await new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error('Servidor não iniciou')), 60000);
     child.once('error', reject);
@@ -98,4 +105,14 @@ test('interface, SDK e login são servidos localmente como JavaScript', async ()
     assert.ok(response.headers.get('content-type').startsWith('application/javascript'));
     assert.ok(response.headers.get('content-security-policy').includes("script-src 'self'"));
   }
+});
+
+test('funil recebe respostas sem login e grava somente pelo RPC, sem expor leitura',async()=>{
+  const body={id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',token:'a'.repeat(64),quizId:'consumo',answers:{goal:'reduce'},completed:false,revision:1};
+  assert.equal((await request('/api/funnel','POST',body)).status,200);
+  assert.deepEqual(records.get('last-funnel').p_answers,{goal:'reduce'});
+  assert.equal(records.get('last-funnel').p_version,'consumo-v2');
+  assert.equal((await request('/api/funnel')).status,404);
+  assert.equal((await request('/api/funnel','POST',{...body,completed:true})).status,400);
+  assert.equal((await request('/api/funnel','POST',{...body,token:'short'})).status,400);
 });

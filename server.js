@@ -18,6 +18,8 @@ if (STORAGE_MODE === 'json' && !['127.0.0.1', 'localhost', '::1'].includes(HOST)
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(__dirname, 'data');
 const STORE_FILE = path.join(DATA_DIR, 'store.json');
+const { createFunnelStore } = require('./lib/funnel.cjs');
+const funnelStore = createFunnelStore({mode:STORAGE_MODE,url:SUPABASE_URL,key:SUPABASE_KEY,dataDir:DATA_DIR});
 // Carrega o mesmo conteúdo ESM do navegador sem alterar o servidor CommonJS.
 const supportGuidesSource = fs.readFileSync(path.join(PUBLIC_DIR, 'js/content/support-guides.js'), 'utf8');
 const supportGuidesModule = import('data:text/javascript;base64,' + Buffer.from(supportGuidesSource).toString('base64'));
@@ -279,7 +281,13 @@ async function handleApi(req, res, pathname) {
   const method = req.method || 'GET';
   const body = ['POST', 'PUT', 'PATCH'].includes(method) ? await readBody(req) : {};
   if (!body || Array.isArray(body) || typeof body !== 'object') invalid('Envie um objeto JSON.');
-  if (pathname === '/api/config' && method === 'GET') return json(res, 200, { mode: STORAGE_MODE, supabaseUrl: SUPABASE_URL, publishableKey: SUPABASE_KEY });
+  if (pathname === '/api/funnel') {
+    if (method !== 'POST') return json(res,404,{error:'Rota não encontrada.'});
+    if (process.env.FUNNEL_ENABLED !== 'true') return json(res,503,{error:'Registro do funil ainda não ativado.'});
+    await funnelStore.record(body,req.socket.remoteAddress,await quizModule);
+    return json(res,200,{ok:true});
+  }
+  if (pathname === '/api/config' && method === 'GET') return json(res, 200, { mode: STORAGE_MODE, supabaseUrl: SUPABASE_URL, publishableKey: SUPABASE_KEY, funnelEnabled:process.env.FUNNEL_ENABLED === 'true' });
   if (pathname === '/api/health' && method === 'GET') return json(res, 200, { app: 'desato', mode: STORAGE_MODE });
   if (STORAGE_MODE === 'supabase') {
     const session = await cloud.authenticate(req);

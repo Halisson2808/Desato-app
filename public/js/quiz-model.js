@@ -73,3 +73,36 @@ export function evaluateQuiz(quizId, answers) {
     description: urgent ? 'Confusão, alucinações ou convulsões precisam de atendimento imediato. Este quiz e o SOS não atendem uma emergência.' : withdrawal ? 'Os sintomas relatados podem estar relacionados à abstinência. Não interrompa nem reduza abruptamente por conta própria; busque orientação profissional.' : concerns.length ? 'Suas respostas trazem dificuldades ou impactos relacionados ao álcool. Uma conversa com um profissional pode ajudar a avaliar a situação e as opções de cuidado.' : 'Estas perguntas não excluem problemas relacionados ao álcool. Use suas respostas para conversar sobre suas necessidades e preparar um próximo passo.',
     action: quiz.action };
 }
+
+// Funil v2: preserva os resultados v1 sem reinterpretar respostas antigas.
+const changes = { id:'changes', type:'multiple', title:'O que você gostaria de recuperar no seu dia a dia?', help:'Pode escolher mais de uma opção.', options:[
+  {value:'control',label:'Ter mais controle sobre minhas escolhas'}, {value:'money',label:'Parar de gastar tanto com bebida'},
+  {value:'energy',label:'Acordar com mais disposição'}, {value:'relations',label:'Estar mais presente nas minhas relações'},
+  {value:'routine',label:'Voltar a cuidar dos meus planos e da minha rotina'}
+] };
+const funnelGoal = {...goal,title:'O que você quer mudar na sua relação com o álcool?',options:[
+  {value:'understand',label:'Quero recuperar o controle'}, {value:'reduce',label:'Quero beber menos'},
+  {value:'quit',label:'Quero parar de beber'}, {value:'continue',label:'Quero manter a mudança que comecei'}
+]};
+export const FUNNELS = QUIZZES.map(quiz => ({id:quiz.id,title:quiz.title,questions:[funnelGoal,...quiz.questions.slice(2,5),changes,spend,frequency]}));
+export function validateFunnel(quizId,answers,completed=false) {
+  const quiz = FUNNELS.find(item => item.id === quizId);
+  if (!quiz || !answers || typeof answers !== 'object' || Array.isArray(answers)) throw new Error('Respostas inválidas.');
+  if (Object.keys(answers).some(key => !quiz.questions.some(question => question.id === key))) throw new Error('Resposta desconhecida.');
+  const clean = {};
+  for (const question of quiz.questions) {
+    if (!Object.hasOwn(answers,question.id)) {if (completed) throw new Error('Responda todas as etapas.');continue;}
+    const value = answers[question.id];
+    if (question.type === 'choice') {
+      if (!question.options.some(option => option.value === value)) throw new Error('Escolha uma resposta válida.');
+      clean[question.id] = value;
+    } else if (question.type === 'multiple') {
+      if (!Array.isArray(value) || !value.length || value.length > question.options.length || new Set(value).size !== value.length || !value.every(item => question.options.some(option => option.value === item))) throw new Error('Selecione pelo menos uma opção.');
+      clean[question.id] = [...value];
+    } else {
+      if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > (question.type === 'money' ? 1000000 : 14) || (question.type === 'money' && Math.abs(value*100-Math.round(value*100)) > .00001)) throw new Error('Confira o valor informado.');
+      clean[question.id] = value;
+    }
+  }
+  return clean;
+}

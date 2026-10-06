@@ -1,48 +1,48 @@
-# Site e quizzes — 06/10/2026
+# Site e funil — atualização de 06/10/2026
 
-## Rotas implementadas
+## Interface atual
 
-- `/`: site público do Desato App, com apresentação, cinco caminhos, funções atuais e dúvidas frequentes.
-- `/quiz`: seleção dos cinco quizzes e consulta de resultados salvos na conta.
-- `/quiz/consumo`, `/quiz/vontade`, `/quiz/gatilhos`, `/quiz/impacto`, `/quiz/retomada`: acesso direto à versão correspondente, com confirmação de idade antes de iniciar.
-- `/app`: aplicativo existente, com login e as abas atuais preservadas.
+`/quiz` abre diretamente a apresentação do funil principal. Não há catálogo, confirmação de idade, rodapé, login ou links de saída. O header contém apenas a logo e a marca Desato App.
 
-O site está no mesmo servidor do aplicativo; ainda não foi publicado em domínio externo. BAT e manifesto abrem `/app`. Links antigos de confirmação/recuperação do Supabase que chegam à raiz são encaminhados ao app preservando código, parâmetros e fragmento. Antigos fragmentos das abas também chegam ao app.
+A abertura tem título, subtítulo, ilustração leve feita com CSS e um único botão para começar. Depois há uma pergunta por tela:
 
-## Sete perguntas por versão
+1. Objetivo pessoal.
+2–4. Perguntas da versão escolhida.
+5. Checklist do que a pessoa quer recuperar no dia a dia.
+6. Gasto médio com bebidas por saída.
+7. Frequência semanal dessas saídas.
 
-1. Sintomas quando fica sem beber/reduz, com orientação imediata se houver sinais de urgência.
-2. Objetivo pessoal neste momento.
-3–5. Três perguntas específicas do caminho escolhido: consumo/controle; vontade/resposta; gatilhos/pressão; impactos/apoio; ou tentativas/retomada.
-6. Gasto médio com bebidas por saída, em reais, editável e com atalhos.
-7. Saídas por semana: 0–7 como atalhos e frequência personalizada de 0 a 14, incluindo frações.
+Seleção única avança imediatamente. Checklist permite várias escolhas e só habilita Continuar depois de uma seleção. Valores financeiros oferecem atalhos que avançam ao tocar e campos personalizados com validação. A seta interna permite corrigir etapas anteriores, preservando respostas.
 
-A tela seguinte traz o resultado. É possível voltar e corrigir sem perder as outras respostas. Nenhuma opção começa marcada. As respostas antigas não são transformadas em dias sem consumo.
+O resultado mostra objetivo, escolhas, gasto médio mensal/diário/anual e cenários de economia. As contas são projeções pelas respostas, sem classificação clínica e sem garantia de redução do consumo. Nesta versão, não há preço ou assinatura no resumo financeiro: o checkout foi expressamente adiado pelo usuário.
 
-## Resultado e limites
+As cinco versões continuam disponíveis para uso por links diretos: `/quiz/consumo`, `/quiz/vontade`, `/quiz/gatilhos`, `/quiz/impacto` e `/quiz/retomada`. `/quiz` usa consumo como padrão. Nenhuma versão passa por uma tela de seleção.
 
-Não são AUDIT nem outro instrumento validado. Não atribuem diagnóstico, nível de alcoolismo, gravidade clínica ou probabilidade inventada. O resultado descreve situações relatadas e sugere próximos passos. Precisa de revisão profissional antes de divulgação ampla.
+O código do BioPet-Nutri foi usado como referência para a estrutura: abertura, seleção única automática e checklist com confirmação. A pasta avo-yuki estava vazia no ambiente consultado. Nenhum dos projetos de referência foi alterado.
 
-Sinais de urgência são destacados assim que selecionados, sem esperar a conclusão. No resultado de urgência, a comparação financeira fica oculta. Sintomas possíveis de abstinência geram orientação para avaliação antes de mudar o consumo; nenhum protocolo de desintoxicação ou redução doméstica foi criado.
+## Arquivos
 
-A projeção considera apenas bebidas nas saídas, não consumo em casa, alimentação ou transporte. Mostra mês médio, média diária e ano, com cenários de redução de 25%, 50% ou 100% dessas saídas. A hipótese de assinatura é centralizada em `MONTHLY_PRICE`, no módulo do quiz; R$ 20 não é preço final, oferta nem cobrança. Economia líquida negativa é mostrada como custo adicional, sem ocultar o resultado.
+- `public/quiz.html`: página sem navegação externa.
+- `public/funnel.css`: visual próprio do funil, responsivo e com redução de movimento.
+- `public/js/quiz.js`: etapas, respostas, validação e resumo.
+- `public/js/quiz-model.js`: versões v2 e cálculos; modelo v1 preservado para compatibilidade com respostas anteriores.
 
-Fórmulas: ano = gasto × frequência × 52; mês = ano ÷ 12; dia = ano ÷ 365; cenário = mês × (1 − redução) + assinatura; economia líquida = mês × redução − assinatura. Usar o app não garante redução ou economia. A simulação financeira não recomenda alterar consumo sem avaliação clínica.
+Site público em `/` e aplicativo em `/app` continuam separados. Perfil contém link para responder ao funil. O aplicativo mantém a tela de acesso básica, sem reenvio de confirmação ou atalhos públicos de apoio.
 
-## Salvamento e privacidade
+## Banco e checkout: adiado pelo usuário
 
-Responder não exige login. As respostas ficam em memória durante o preenchimento; não são enviadas ao servidor ou guardadas automaticamente no armazenamento do navegador.
+O usuário pediu foco na interface e deixou a coleta no banco para depois. O registro automático está **desativado por padrão**. O funil funciona sem login e sem enviar respostas quando `/api/config` não informa `funnelEnabled: true`. Não há alerta de falha de banco quando a coleta está desativada.
 
-Ao solicitar salvar sem sessão, uma cópia temporária fica em `sessionStorage` da aba por até duas horas; o usuário entra em `/app?next=quiz`, retorna ao resultado e confirma o salvamento. A expiração é verificada ao carregar; o navegador também encerra esse armazenamento ao fechar a aba. Não há respostas em URLs, publicidade ou rastreamento.
+Foi preparada a migração `supabase/migrations/20261006000200_funnel_responses.sql`, mas ela **não foi aplicada remotamente**: a CLI recebeu erro de permissão 403 e o usuário adiou essa etapa. Não ativar `FUNNEL_ENABLED=true` antes de aplicar e verificar a migração no projeto correto.
 
-`POST /api/quiz` valida as sete respostas no servidor e grava em `desato_quiz_answers`, tabela já existente com RLS. Há uma resposta mais recente por versão e conta; repetir substitui a resposta dessa versão. `GET /api/quiz` consulta somente os registros da conta autenticada. `user_id` e versão são definidos pelo servidor.
+O código preparado recebe respostas por `POST /api/funnel`, usando um identificador aleatório e um token de escrita. A tabela proposta `desato_funnel_responses` tem RLS, nenhuma leitura por visitantes/contas comuns e gravação por função controlada. Revisões antigas não substituem as novas; não há ligação automática com contas, e-mail ou telefone. IP é usado apenas em memória para limite de requisições, sem persistência nos registros. Conteúdo pessoal não é logado.
 
-A calculadora do aplicativo só é atualizada se a pessoa marcar essa opção. Quiz e calculadora são duas gravações; se só a segunda falhar, a mensagem explica que o quiz foi salvo e a calculadora não foi atualizada. Não há alteração de check-ins ou importação do histórico local para uma conta.
+Quando for ativada, cada etapa confirmada e a conclusão poderão ser registradas no Supabase. O modo JSON continua apenas para desenvolvimento explicitamente configurado; não há fallback do banco para arquivos. A futura consulta administrativa e o encaminhamento ao checkout ainda precisam ser definidos. O evento `desato:quiz-complete` é apenas o ponto de integração, sem botão fictício ou destino inventado.
 
-## Arquivos e verificação
+Resultados v1 por conta e a API `/api/quiz` foram preservados, mas os controles antigos de salvar/consultar resultados não aparecem no funil comercial.
 
-Páginas em `public/site.html` e `public/quiz.html`; estilos em `public/site.css`; conteúdo, validação e cálculos em `public/js/quiz-model.js`; fluxo em `public/js/quiz.js`. O mesmo modelo é usado na validação do servidor. Acesso pelo Perfil foi adicionado.
+## Verificação
 
-Verificações automatizadas incluem cálculos, zero/economia negativa, validação, sete perguntas nos cinco caminhos, urgência imediata, navegação/correção pelo DOM, rotas públicas, autenticação, isolamento de resultados e preservação dos dados atuais. Não foi feita inspeção visual no navegador, conforme preferência do usuário. Não houve envio de e-mails ou criação de usuários reais de teste.
+54 testes passaram: navegação automática, checklist, valores personalizados, correções, cálculos, cinco links diretos, preservação do app e autenticação. Os testes de coleta usam banco/servidores de teste, sem gravar respostas de pessoas no projeto real. A migração foi validada localmente, incluindo bloqueio de leitura pública, token errado e revisões fora de ordem.
 
-Validação final: 49 testes passaram após renomear a pasta e simplificar a tela de acesso. Login/cadastro/recuperação não exibem reenvio de confirmação ou atalhos de apoio/SOS.
+Não houve inspeção ou interação no navegador, conforme a preferência do usuário. Para carregar os arquivos novos em uma aba já aberta, usar Ctrl+F5.

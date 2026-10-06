@@ -46,37 +46,64 @@ test('sinais de urgência e abstinência mudam a orientação sem pontuação', 
   const withdrawal = evaluateQuiz(quiz.id, { ...answers,safety:'withdrawal' });
   assert.equal(withdrawal.withdrawal,true); assert.match(withdrawal.description,/abruptamente/);
 });
-async function boot() {
-  const { document } = parseHTML('<html><body><main id="quiz-main" tabindex="-1"></main></body></html>');
-  document.defaultView.HTMLElement.prototype.focus = function() {};
-  const entries = new Map();
-  const location = { pathname:'/quiz',search:'', replace(){} };
-  const context = vm.createContext({ document, location, Intl, URLSearchParams, console,
-    history:{ pushState: (_,__,url) => { location.pathname = url; } }, window:{ addEventListener(){} },
-    sessionStorage:{ getItem:key => entries.get(key)||null, setItem:(key,value)=>entries.set(key,value), removeItem:key=>entries.delete(key) }
-  });
-  const output = await build({ entryPoints:[path.join(root,'public/js/quiz.js')], bundle:true,write:false,format:'iife',platform:'browser' });
-  vm.runInContext(output.outputFiles[0].text,context);
-  const event = (selector,type) => document.querySelector(selector).dispatchEvent(new document.defaultView.Event(type,{cancelable:true,bubbles:true}));
-  const answer = value => { document.querySelectorAll('input[name="answer"]').forEach(input => { input.checked = input.value === value; if (input.checked) input.setAttribute('checked',''); else input.removeAttribute('checked'); }); event(`input[value="${value}"]`,'input'); };
-  return { document,entries,event,answer };
-}
-test('fluxo real valida idade, exige resposta, permite voltar e calcula resultado corrigido', async () => {
-  const app = await boot();
-  app.event('[data-quiz="consumo"]','click'); assert.match(app.document.querySelector('#quiz-error').textContent,/Confirme/);
-  app.document.querySelector('#adult').checked = true; app.event('[data-quiz="consumo"]','click');
-  app.event('#question-form','submit'); assert.match(app.document.querySelector('#quiz-error').textContent,/Escolha/);
-  for (const value of ['none','understand','weekly','sometimes','difficult']) { app.answer(value); app.event('#question-form','submit'); }
-  app.document.querySelector('#money').value = '80,00'; app.event('#question-form','submit');
-  app.event('[data-frequency="2"]','click'); app.event('#back','click');
-  assert.equal(app.document.querySelector('#money').value,'80,00');
-  app.document.querySelector('#money').value = '100,00'; app.event('#question-form','submit');
-  assert.equal(app.document.querySelector('#frequency').value,'2'); app.event('#question-form','submit');
-  assert.match(app.document.querySelector('.big-money').textContent,/866,67/);
-  assert.match(app.document.querySelector('.net').textContent,/413,33/);
-  assert.equal(app.entries.size,0, 'não guarda respostas sensíveis sem pedido de salvar');
+test('funil v2 tem sete etapas com checklist, valida entradas e mantém a ordem financeira',async()=>{
+  const {FUNNELS,validateFunnel}=await model;
+  for(const quiz of FUNNELS){
+    assert.equal(quiz.questions.length,7);assert.equal(quiz.questions[0].id,'goal');
+    assert.equal(quiz.questions[4].type,'multiple');assert.equal(quiz.questions[5].id,'spend');assert.equal(quiz.questions[6].id,'frequency');
+    assert.throws(()=>validateFunnel(quiz.id,{changes:[]}));assert.throws(()=>validateFunnel(quiz.id,{changes:['money','money']}));
+    assert.throws(()=>validateFunnel(quiz.id,{spend:80.001}));assert.throws(()=>validateFunnel(quiz.id,{unknown:'x'}));
+    assert.throws(()=>validateFunnel(quiz.id,{goal:'reduce'},true));
+    assert.deepEqual(validateFunnel(quiz.id,{changes:['money','energy']}),{changes:['money','energy']});
+  }
 });
-test('urgência é apresentada já na primeira resposta, antes do resultado', async () => {
-  const app = await boot(); app.document.querySelector('#adult').checked = true; app.event('[data-quiz="vontade"]','click');
-  app.answer('urgent'); assert.match(app.document.querySelector('#safety-notice').textContent,/Não espere terminar/);
+async function boot(pathname='/quiz'){
+  const {document}=parseHTML(fs.readFileSync(path.join(root,'public/quiz.html'),'utf8'));
+  document.defaultView.HTMLElement.prototype.focus=function(){};
+  const requests=[],completions=[];
+  const context=vm.createContext({document,location:{pathname},Intl,console,crypto:require('node:crypto').webcrypto,structuredClone,Uint8Array,AbortSignal,Blob,navigator:{},
+    CustomEvent:document.defaultView.CustomEvent,window:{scrollTo(){},addEventListener(){},dispatchEvent:event=>completions.push(event.type)},
+    fetch:async(url,options)=>{requests.push({url,options});return{ok:true,json:async()=>({funnelEnabled:false})};}
+  });
+  const output=await build({entryPoints:[path.join(root,'public/js/quiz.js')],bundle:true,write:false,format:'iife',platform:'browser'});
+  vm.runInContext(output.outputFiles[0].text,context);
+  const event=(selector,type='click')=>document.querySelector(selector).dispatchEvent(new document.defaultView.Event(type,{cancelable:true,bubbles:true}));
+  const flush=()=>new Promise(resolve=>setImmediate(resolve));
+  return{document,requests,completions,event,flush};
+}
+test('entrada é direta, sem catálogo, idade, login ou links de saída',async()=>{
+  const app=await boot();
+  assert.ok(app.document.querySelector('#start'));
+  assert.equal(app.document.querySelectorAll('a').length,0);
+  assert.equal(app.document.querySelector('nav'),null);
+  assert.equal(app.document.querySelector('footer'),null);
+  assert.equal(app.document.querySelector('#adult'),null);
+  assert.doesNotMatch(app.document.body.textContent,/diagnóstico|18 anos|Entrar no app|Ver meus resultados/);
+  app.event('#start');assert.equal(app.document.querySelectorAll('h1').length,1);
+  assert.match(app.document.querySelector('h1').textContent,/O que você quer mudar/);
+  assert.equal(app.document.querySelector('#number-form'),null);
+  app.event('[data-answer="reduce"]');assert.match(app.document.querySelector('h1').textContent,/Com que frequência/);
+});
+test('seleção única avança, checklist exige resposta e correção recalcula o resumo',async()=>{
+  const app=await boot();app.event('#start');
+  for(const value of ['understand','weekly','sometimes','difficult'])app.event(`[data-answer="${value}"]`);
+  assert.equal(app.document.querySelector('#next-multiple').disabled,true);
+  app.event('[data-multiple="money"]');app.event('[data-multiple="energy"]');
+  assert.equal(app.document.querySelector('[data-multiple="money"]').getAttribute('aria-pressed'),'true');
+  app.event('[data-multiple="money"]');assert.equal(app.document.querySelector('[data-multiple="money"]').getAttribute('aria-pressed'),'false');
+  app.event('#next-multiple');app.event('#custom-money');
+  app.document.querySelector('#numeric-answer').value='80,001';app.event('#number-form','submit');
+  assert.match(app.document.querySelector('#quiz-error').textContent,/Confira/);
+  app.document.querySelector('#numeric-answer').value='80,00';app.event('#number-form','submit');
+  app.event('[data-frequency="2"]');assert.match(app.document.querySelector('.big-money').textContent,/693,33/);
+  app.event('#back');app.event('#back');assert.equal(app.document.querySelector('#numeric-answer').value,'80,00');
+  app.document.querySelector('#numeric-answer').value='100,00';app.event('#number-form','submit');app.event('[data-frequency="2"]');
+  assert.match(app.document.querySelector('.big-money').textContent,/866,67/);assert.match(app.document.querySelector('.net').textContent,/433,33/);
+  app.event('[data-reduction="1"]');assert.match(app.document.querySelector('.net').textContent,/866,67/);
+  assert.deepEqual(app.completions,['desato:quiz-complete']);
+  await app.flush();await app.flush();assert.equal(app.requests.filter(item=>item.url==='/api/funnel').length,0,'registro desativado não envia respostas');
+});
+test('os cinco links diretos abrem o funil correto sem tela de seleção',async()=>{
+  const {FUNNELS}=await model;
+  for(const quiz of FUNNELS){const app=await boot('/quiz/'+quiz.id);app.event('#start');app.event('[data-answer="reduce"]');assert.equal(app.document.querySelector('h1').textContent,quiz.questions[1].title);}
 });

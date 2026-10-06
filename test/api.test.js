@@ -21,7 +21,7 @@ before(async () => {
   const port = probe.address().port;
   await new Promise(resolve => probe.close(resolve));
   base = `http://127.0.0.1:${port}`;
-  child = spawn(process.execPath, ['server.js'], { cwd: path.join(__dirname, '..'), env: { ...process.env, PORT: String(port), DATA_DIR: directory, STORAGE_MODE: 'json' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  child = spawn(process.execPath, ['server.js'], { cwd: path.join(__dirname, '..'), env: { ...process.env, PORT: String(port), DATA_DIR: directory, STORAGE_MODE: 'json', FUNNEL_ENABLED:'true' }, stdio: ['ignore', 'pipe', 'pipe'] });
   await new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error('Servidor não iniciou')), 60000);
     child.once('error', reject);
@@ -202,4 +202,15 @@ test('quiz local valida respostas e preserva histórico e dinheiro ao salvar', a
   assert.equal((await request('/api/quiz')).data.quizzes[0].answers.spend,80);
   const after = (await request('/api/state')).data.store;
   assert.deepEqual(after.checkins,before.checkins); assert.deepEqual(after.money,before.money);
+});
+
+test('funil local registra visitantes separados, rejeita token errado e não altera contas',async()=>{
+  const body={id:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',token:'c'.repeat(64),quizId:'consumo',answers:{goal:'reduce'},completed:false,revision:1};
+  const before=(await request('/api/state')).data.store;
+  assert.equal((await request('/api/funnel','POST',body)).status,200);
+  assert.equal((await request('/api/funnel','POST',{...body,token:'d'.repeat(64),revision:2})).status,409);
+  assert.equal((await request('/api/funnel')).status,404);
+  const rows=JSON.parse(fs.readFileSync(path.join(directory,'funnel-responses.json'),'utf8'));
+  assert.equal(rows[body.id].answers.goal,'reduce');assert.equal(rows[body.id].token,undefined);
+  assert.deepEqual((await request('/api/state')).data.store,before);
 });

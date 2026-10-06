@@ -19,6 +19,7 @@ before(async () => {
   await db.exec(`
     create role anon nologin;
     create role authenticated nologin;
+    create role service_role nologin bypassrls;
     create schema auth;
     grant usage on schema auth to authenticated;
     create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}'::jsonb);
@@ -27,17 +28,36 @@ before(async () => {
     $$;
   `);
   await db.exec(sql);
+  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261006000200_funnel_responses.sql'),'utf8'));
   await db.query('insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3), ($4, $5, $6)', [alice, 'alice@example.test', { name: 'Alice' }, bob, 'bob@example.test', { name: 'Bob' }]);
 });
 after(async () => { if (db) await db.close(); });
 
-test('migração SQL executa e todas as 12 tabelas possuem RLS e política de propriedade', async () => {
+test('13 tabelas possuem RLS: 12 por conta e respostas do funil sem leitura pública', async () => {
   const { rows } = await db.query("select c.relname, c.relrowsecurity, c.relforcerowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname like 'desato_%' and c.relkind = 'r'");
-  assert.equal(rows.length, 12);
-  assert.ok(rows.every(row => row.relrowsecurity && row.relforcerowsecurity));
+  assert.equal(rows.length, 13);
+  assert.ok(rows.every(row => row.relrowsecurity && (row.relname === 'desato_funnel_responses' || row.relforcerowsecurity)));
   const policies = await db.query("select tablename, qual, with_check from pg_policies where schemaname = 'public' and policyname = 'desato_owner'");
   assert.equal(policies.rows.length, 12);
   assert.ok(policies.rows.every(row => row.qual.includes('auth.uid()') && row.with_check.includes('auth.uid()')));
+});
+
+test('visitante registra o próprio funil sem ler respostas e token errado não sobrescreve dados', async () => {
+  const id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',token='a'.repeat(64);
+  const record=async(secret,revision,answers)=>db.query('select public.desato_record_funnel($1,$2,$3,$4,$5,$6) as accepted',[id,secret,'consumo-v2',answers,false,revision]);
+  await db.exec('set role anon');
+  try {
+    assert.equal((await record(token,1,{goal:'reduce'})).rows[0].accepted,true);
+    assert.equal((await record('b'.repeat(64),2,{goal:'quit'})).rows[0].accepted,false);
+    await assert.rejects(db.query('select * from public.desato_funnel_responses'),error=>error.code==='42501');
+    await assert.rejects(db.query('delete from public.desato_funnel_responses'),error=>error.code==='42501');
+    assert.equal((await record(token,3,{goal:'reduce',spend:80})).rows[0].accepted,true);
+    assert.equal((await record(token,2,{goal:'quit'})).rows[0].accepted,true);
+    await assert.rejects(record('short',4,{}));
+  } finally {await db.exec('reset role');}
+  const row=(await db.query('select * from public.desato_funnel_responses where id=$1',[id])).rows[0];
+  assert.equal(row.revision,3);assert.equal(row.answers.spend,80);assert.equal(row.write_token,undefined);
+  await asUser(alice,()=>assert.rejects(db.query('select * from public.desato_funnel_responses'),error=>error.code==='42501'));
 });
 
 test('cadastro cria perfil e rotina, sem inventar consumo, gastos ou respostas do quiz', async () => {

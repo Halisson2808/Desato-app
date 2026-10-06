@@ -29,7 +29,9 @@ A marca escolhida pelo usuário é **Desato**. Na interface, `APP_NAME = 'Desato
 
 ## Site e quizzes implementados
 
-Site público na raiz, cinco quizzes em `/quiz` e aplicativo em `/app`. Cada quiz tem sete perguntas, com gasto/frequência consecutivos e resultado orientativo e financeiro. Respostas podem ser salvas por conta na tabela existente de quiz; calculadora só atualiza mediante opção explícita. Consultar `SITE_E_QUIZZES.md` e `PLANEJAMENTO_QUIZ.md`. Assinatura de R$ 20/mês continua hipótese; sem cobrança. Não atribuir diagnóstico ou classificação clínica a estas perguntas não validadas.
+Site público na raiz, funil direto em `/quiz` e aplicativo em `/app`. Atualização solicitada: header só com marca, apresentação com um botão, uma pergunta por tela, seleção única avança imediatamente e checklist usa Continuar. Sem catálogo, idade, rodapé, login, orientações clínicas ou links de saída no funil. São sete perguntas, terminando em gasto/frequência e resumo financeiro. Cinco versões disponíveis por links diretos, sem menu de escolha. Consultar `SITE_E_QUIZZES.md`. Não inventar diagnóstico, preço final, cobrança ou botão de checkout sem destino.
+
+Coleta no banco foi explicitamente adiada pelo usuário para focar nas interfaces. Migração `20261006000200_funnel_responses.sql` preparada e testada localmente, mas não aplicada remotamente (CLI retornou permissão 403). `FUNNEL_ENABLED` fica desativado por padrão; não ativar nem retentar acesso remoto até retomar essa etapa. App mantém Supabase e isolamento por conta. Modelo/API de respostas v1 preservados, sem controles antigos no funil.
 
 ## Aba Apoio implementada
 
