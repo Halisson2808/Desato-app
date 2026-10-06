@@ -16,7 +16,7 @@ No funil principal, a segunda pergunta passou a ser “Em que momento você mais
 
 Seleção única avança imediatamente. Checklist permite várias escolhas e só habilita Continuar depois de uma seleção. Valores financeiros oferecem atalhos que avançam ao tocar e campos personalizados com validação. A seta interna permite corrigir etapas anteriores, preservando respostas.
 
-Depois das perguntas, a tela de impacto mostra gastos mensal/anual e média diária. O botão Conhecer meu próximo passo abre uma tela separada de oferta: objetivo em destaque, benefícios atuais, preço de referência de R$ 20/mês e cenários de economia líquida. O preço não foi confirmado e o checkout não foi criado. Consultar PLANEJAMENTO_OFERTA.md.
+Depois das perguntas, a tela de impacto mostra gastos mensal/anual e média diária. O botão Conhecer meu próximo passo abre uma tela separada de oferta: objetivo em destaque, benefícios atuais, assinatura de R$ 29,90/mês e cenários de economia líquida. O preço foi definido pelo usuário; o checkout não foi criado. Consultar PLANEJAMENTO_OFERTA.md.
 
 As cinco versões continuam disponíveis para uso por links diretos: `/quiz/consumo`, `/quiz/vontade`, `/quiz/gatilhos`, `/quiz/impacto` e `/quiz/retomada`. `/quiz` usa consumo como padrão. Nenhuma versão passa por uma tela de seleção.
 

@@ -29,7 +29,7 @@ A marca escolhida pelo usuário é **Desato**. Na interface, `APP_NAME = 'Desato
 
 ## Site e quizzes implementados
 
-Oferta: consultar `PLANEJAMENTO_OFERTA.md`. Abertura sem dinheiro ou número de perguntas. Após as sete respostas, mostrar primeiro impacto mensal/anual; um botão abre a oferta em outra tela, com objetivo em destaque, cinco benefícios atuais e comparação que desconta o preço de referência. R$ 20/mês permanece provisório (`OFFER.priceConfirmed=false`). Checkout não foi implementado; não apresentar preço como confirmado nem prometer redução automática de 50%.
+Oferta: consultar `PLANEJAMENTO_OFERTA.md`. Abertura sem dinheiro ou número de perguntas. Após as sete respostas, mostrar primeiro impacto mensal/anual; um botão abre a oferta em outra tela, com objetivo em destaque, cinco benefícios atuais e comparação que desconta o preço de referência. O usuário definiu R$ 29,90/mês (`OFFER.priceConfirmed=true`). Checkout não foi implementado; não prometer redução automática de 50%.
 
 Site público na raiz, funil direto em `/quiz` e aplicativo em `/app`. Atualização solicitada: header só com marca, apresentação com um botão, uma pergunta por tela, seleção única avança imediatamente e checklist usa Continuar. Sem catálogo, idade, rodapé, login, orientações clínicas ou links de saída no funil. São sete perguntas, terminando em gasto/frequência e resumo financeiro. Cinco versões disponíveis por links diretos, sem menu de escolha. Consultar `SITE_E_QUIZZES.md`. Não inventar diagnóstico, preço final, cobrança ou botão de checkout sem destino.
 

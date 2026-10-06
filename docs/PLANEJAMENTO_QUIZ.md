@@ -4,6 +4,8 @@ Registrado em 01/10/2026 a pedido do usuário. Atualização de 06/10/2026: inte
 
 ## Marca aprovada
 
+Preço atualizado em 06/10/2026: o usuário definiu **R$ 29,90 por mês**. Essa definição substitui as hipóteses de R$ 20 presentes no planejamento histórico abaixo. A apresentação e os cálculos atuais usam R$ 29,90; cobrança ainda não integrada.
+
 - Nome principal: **Desato**.
 - Nome para descoberta e pesquisa: **Desato App**.
 - Usar Desato na interface e Desato App no título público, metadados, páginas de apresentação e descrição do produto, com escrita consistente.
