@@ -43,7 +43,7 @@ A aba **Apoio** substitui Perfil na navegação principal e está implementada c
 
 ## Prioridade para implementação real
 
-Rotina: pedido mais recente foi análise e planejamento, sem alteração de tela nesta etapa. Consultar `PLANEJAMENTO_ROTINA.md`. Proposta: substituir a apresentação genérica por Meu plano, reaproveitando o plano pessoal de Apoio e deixando ações visíveis em lista única. Preservar tarefas/histórico; não duplicar planos ou inventar campos novos na API. A proposta ainda não está implementada.
+Rotina: implementação autorizada e concluída como **Meu plano**, com situações, primeira ação e lista única de ações diárias. Consultar `PLANEJAMENTO_ROTINA.md`. Reaproveita `support.plan` e APIs existentes, preservando dados. Padrões iniciais podem ser pausados mediante opção do usuário; títulos personalizados/histórico não são substituídos. Demais telas não foram modificadas. Alimentação → Progresso continua somente como proposta no documento de pesquisa; Apoio já substituiu Perfil numa alteração anterior.
 
 Banco, autenticação e vínculo por `user_id` já foram implementados. Antes de priorizar cobrança, consultar `PESQUISA_E_PLANO_DESATO.md`: a pesquisa de 06/10/2026 recomenda reforçar o foco em vontade de beber, gatilhos, plano por situação, resultado do SOS e retomada após consumo. A navegação proposta e a redução do destaque de Alimentação são planejamento; ainda não foram implementadas. Manter os fluxos existentes até uma solicitação de implementação.
 

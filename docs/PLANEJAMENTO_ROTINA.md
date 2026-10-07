@@ -1,6 +1,20 @@
 # Rotina → Meu plano: proposta para o Desato
 
-Data: 06/10/2026. Escopo solicitado: análise e planejamento. Nenhuma tela, tarefa ou registro foi alterado nesta etapa.
+Data: 06/10/2026. Planejamento inicial seguido de autorização de implementação. A antiga aba Rotina foi transformada em Meu plano. As demais telas foram mantidas conforme pedido explícito do usuário.
+
+## Implementação realizada
+
+- Navegação mostra Meu plano; rota interna `rotina` preservada para links existentes.
+- Primeira visita oferece situações ligadas ao álcool e sugestões de ações concretas.
+- Plano existente em `support.plan` é reaproveitado, sem criar outra cópia. Apoio continua com sua interface e editor anteriores, usando os mesmos dados; nenhum arquivo dessa tela foi modificado.
+- Ações pessoais em lista única, com conclusão, edição e pausa; removidos os períodos como abas, porcentagem no topo e gerenciamento duplicado.
+- Padrões iniciais mantidos em um bloco recolhido. Ao adotar o plano, a pessoa pode optar por pausá-los. Só modelos originais, com ID/título/período/ícone intactos, entram nessa adaptação; tarefas personalizadas ficam preservadas.
+- Primeira ação pode ser adicionada ao dia, com verificação de duplicação. Se a criação falhar depois de salvar o plano, a mensagem distingue as etapas e os hábitos permanecem intactos.
+- Ações pausadas podem ser reativadas, sem perder histórico. Nenhuma ação registra consumo ou abstinência automaticamente.
+- Campos de período ficam na edição secundária, usando os valores existentes no banco. Ícone deixou de ser um campo da interface, preservando o valor dos registros atuais.
+- Sem limite rígido de três tarefas para não ocultar ações personalizadas anteriores. Sugestões orientam uma lista curta.
+
+Validação: 69 testes passaram, incluindo reaproveitamento do plano, tarefas/histórico preservados, falha parcial, ausência de duplicação e troca de conta. Nenhuma migração de banco ou interação no navegador foi necessária. O detalhamento abaixo permanece como referência de evolução.
 
 ## Decisão recomendada
 
@@ -125,4 +139,4 @@ Observar se uma pessoa na primeira visita consegue responder: qual é meu moment
 
 Testar tarefas de preparação, conclusão, edição e retomada com pessoas do público-alvo. Se a função continuar pouco utilizada ou duplicar Apoio, integrar o plano dentro de Apoio e retirar Rotina da navegação, preservando os dados.
 
-Minha primeira escolha é manter a função como **Meu plano** e avaliar sua utilidade. A implementação atual permanece intacta até a próxima etapa solicitada.
+Minha primeira escolha foi implementada: **Meu plano**. As propostas de avaliação e evoluções adicionais seguem para etapas posteriores, sem mudar as demais abas.

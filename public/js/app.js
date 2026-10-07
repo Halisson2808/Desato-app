@@ -37,7 +37,7 @@ function icon(name, className = '') {
 
 const navItems = [
   ['inicio', 'home', 'Início'],
-  ['rotina', 'routine', 'Rotina'],
+  ['rotina', 'routine', 'Meu plano'],
   ['sos', 'sos', 'SOS'],
   ['alimentacao', 'food', 'Alimentação'],
   ['apoio', 'support', 'Apoio']
