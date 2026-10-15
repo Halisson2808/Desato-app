@@ -2,13 +2,13 @@
 
 ## Estado atual
 
-Pasta atual: `Desato App`. Documentação reunida em `docs`; README da raiz serve como índice. O site fica em `/`, os quizzes em `/quiz` e o aplicativo em `/app`. Não recriar a pasta com o nome antigo. O prompt em `docs/PROMPT_PARA_CODEX.txt` é histórico e contém premissas anteriores.
+Pasta atual: `Desato App`. Documentação reunida em `docs`; README da raiz serve como índice. O site fica em `/`, os quizzes em `/quiz` e o aplicativo em `/app`. Não recriar a pasta com o nome antigo.
 
 O projeto já é um MVP full-stack local funcional. Não reescreva a interface do zero.
 
 ### O que já está pronto
 
-Início redesenhado em 06/10/2026: pergunta Você bebeu hoje em destaque, registro direto, calendário mensal clicável (verde sem consumo, vermelho com consumo, cinza sem registro), notas por data e estimativa financeira por mês. Cálculo derivado dos registros, sem incremento duplicado. Resumo da evolução e rotina complementam a tela. Consultar `PLANEJAMENTO_INICIO.md`; não recolocar a sequência de abstinência como protagonista automaticamente.
+Início redesenhado em 06/10/2026: pergunta Você bebeu hoje em destaque, registro direto, calendário mensal clicável (verde sem consumo, vermelho com consumo, cinza sem registro), notas por data e estimativa financeira por mês. Cálculo derivado dos registros, sem incremento duplicado. Resumo da evolução e rotina complementam a tela.; não recolocar a sequência de abstinência como protagonista automaticamente.
 
 - SPA em HTML/CSS/JavaScript sem framework.
 - Backend Node com API REST local.
@@ -31,21 +31,21 @@ A marca escolhida pelo usuário é **Desato**. Na interface, `APP_NAME = 'Desato
 
 ## Site e quizzes implementados
 
-Oferta: consultar `PLANEJAMENTO_OFERTA.md`. Abertura sem dinheiro ou número de perguntas. Após as sete respostas, mostrar primeiro impacto mensal/anual; um botão abre a oferta em outra tela, com objetivo em destaque, cinco benefícios atuais e comparação que desconta o preço de referência. O usuário definiu R$ 29,90/mês (`OFFER.priceConfirmed=true`). Checkout não foi implementado; não prometer redução automática de 50%.
+Oferta: Abertura sem dinheiro ou número de perguntas. Após as sete respostas, mostrar primeiro impacto mensal/anual; um botão abre a oferta em outra tela, com objetivo em destaque, cinco benefícios atuais e comparação que desconta o preço de referência. O usuário definiu R$ 29,90/mês (`OFFER.priceConfirmed=true`). Checkout não foi implementado; não prometer redução automática de 50%.
 
-Site público na raiz, funil direto em `/quiz` e aplicativo em `/app`. Atualização solicitada: header só com marca, apresentação com um botão, uma pergunta por tela, seleção única avança imediatamente e checklist usa Continuar. Sem catálogo, idade, rodapé, login, orientações clínicas ou links de saída no funil. São sete perguntas, terminando em gasto/frequência e resumo financeiro. Cinco versões disponíveis por links diretos, sem menu de escolha. Consultar `SITE_E_QUIZZES.md`. Não inventar diagnóstico, preço final, cobrança ou botão de checkout sem destino.
+Site público na raiz, funil direto em `/quiz` e aplicativo em `/app`. Atualização solicitada: header só com marca, apresentação com um botão, uma pergunta por tela, seleção única avança imediatamente e checklist usa Continuar. Sem catálogo, idade, rodapé, login, orientações clínicas ou links de saída no funil. São sete perguntas, terminando em gasto/frequência e resumo financeiro. Cinco versões disponíveis por links diretos, sem menu de escolha. Não inventar diagnóstico, preço final, cobrança ou botão de checkout sem destino.
 
 Coleta no banco foi explicitamente adiada pelo usuário para focar nas interfaces. Migração `20261006000200_funnel_responses.sql` preparada e testada localmente, mas não aplicada remotamente (CLI retornou permissão 403). `FUNNEL_ENABLED` fica desativado por padrão; não ativar nem retentar acesso remoto até retomar essa etapa. App mantém Supabase e isolamento por conta. Modelo/API de respostas v1 preservados, sem controles antigos no funil.
 
 ## Aba Apoio implementada
 
-A aba **Apoio** substitui Perfil na navegação principal e está implementada com seis situações práticas, nove guias, favoritos e plano pessoal salvo. Perfil permanece pelo avatar. Conteúdo em `public/js/content/support-guides.js`; tela em `public/js/views/support.js`. A API migra arquivos antigos para `support` sem perder o histórico. Consultar `PLANEJAMENTO_APOIO.md` para detalhes. O SOS mantém seu fluxo linear.
+A aba **Apoio** substitui Perfil na navegação principal e está implementada com seis situações práticas, nove guias, favoritos e plano pessoal salvo. Perfil permanece pelo avatar. Conteúdo em `public/js/content/support-guides.js`; tela em `public/js/views/support.js`. A API migra arquivos antigos para `support` sem perder o histórico. O SOS mantém seu fluxo linear.
 
 ## Prioridade para implementação real
 
-Rotina: implementação autorizada e concluída como **Meu plano**, com situações, primeira ação e lista única de ações diárias. Consultar `PLANEJAMENTO_ROTINA.md`. Reaproveita `support.plan` e APIs existentes, preservando dados. Padrões iniciais podem ser pausados mediante opção do usuário; títulos personalizados/histórico não são substituídos. Demais telas não foram modificadas. Alimentação → Progresso continua somente como proposta no documento de pesquisa; Apoio já substituiu Perfil numa alteração anterior.
+Rotina: implementação autorizada e concluída como **Meu plano**, com situações, primeira ação e lista única de ações diárias. Reaproveita `support.plan` e APIs existentes, preservando dados. Padrões iniciais podem ser pausados mediante opção do usuário; títulos personalizados/histórico não são substituídos. Demais telas não foram modificadas. Alimentação → Progresso continua somente como proposta; Apoio já substituiu Perfil numa alteração anterior.
 
-Banco, autenticação e vínculo por `user_id` já foram implementados. Antes de priorizar cobrança, consultar `PESQUISA_E_PLANO_DESATO.md`: a pesquisa de 06/10/2026 recomenda reforçar o foco em vontade de beber, gatilhos, plano por situação, resultado do SOS e retomada após consumo. A navegação proposta e a redução do destaque de Alimentação são planejamento; ainda não foram implementadas. Manter os fluxos existentes até uma solicitação de implementação.
+Banco, autenticação e vínculo por `user_id` já foram implementados. A pesquisa de 06/10/2026 recomendou reforçar o foco em vontade de beber, gatilhos, plano por situação, resultado do SOS e retomada após consumo. A navegação proposta e a redução do destaque de Alimentação são planejamento; ainda não foram implementadas. Manter os fluxos existentes até uma solicitação de implementação.
 
 ## Regra importante
 
@@ -62,3 +62,15 @@ Migração inicial aplicada no projeto `szvxlhubtvhazlzohpse` após autenticaç�
 Tela de acesso simplificada a pedido do usuário: entrar, criar conta e esqueci a senha. Removidos reenvio de confirmação, bloco de apoio e atalhos públicos para SOS/orientações, inclusive na falha de inicialização. A confirmação de cadastro continua definida pelo Supabase; não desativar essa configuração apenas porque o botão foi removido. Recuperação de senha permanece funcional. As funções internas do aplicativo não foram removidas por esta alteração da tela de login.
 
 Login, cadastro, recuperação, sessão persistente e saída implementados. Perfil inclui controles da conta; senhas ficam no Supabase Auth. O usuário informou que adicionou as duas URLs locais de redirecionamento. SDK do navegador empacotado em `public/vendor/supabase.js`. O histórico JSON antigo não foi importado. Nunca fazer fallback silencioso para JSON nem expor chave administrativa.
+
+## Reestruturação — 11/10/2026
+
+Navegação: **Início · Jornada · SOS · Corpo · Situações**. As rotas internas (`rotina`, `alimentacao`, `apoio`) foram mantidas.
+
+- **SOS** (`views/sos.js`): modo foco em 5 etapas que só avançam quando cumpridas (respiração guiada 4 s/6 s ×6, observar a vontade 60 s, contar de 100 para trás de 7 em 7 ×10, pensar no amanhã 20 s, próxima ação + nova nota). Só há Cancelar e Reiniciar etapa. Grava `intensity` = nota antes (1–5) e `action` = `concluido depois:N acao:x` ou `cancelado etapa:N`.
+- **Início**: ganhou "Seus padrões" (últimos 7 dias, dias da semana com consumo em 90 dias, SOS em 30 dias) em `content/home-progress.js`.
+- **Jornada** (`views/routine.js`, conteúdo em `content/journey.js`): 30 lições, um dia liberado por vez, o seguinte só no dia seguinte. Resposta obrigatória.
+- **Corpo e saúde** (`views/food.js`, `content/body.js`): sequência atual, marcos do corpo, água e dicas. Receitas e compras saíram da interface (APIs mantidas).
+- **Situações difíceis** (`views/support.js`, `content/situations.js`): 6 situações com plano de 3 respostas e "Estou nessa situação agora".
+- Banco: migração `20261011000100_journey_situations.sql` (tabelas `desato_journey_days` e `desato_situation_plans`, RLS `desato_owner`).
+- Assinatura e cobrança ainda não implementadas.

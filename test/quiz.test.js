@@ -92,7 +92,7 @@ test('seleção única avança, checklist exige resposta e correção recalcula 
   app.event('[data-multiple="money"]');app.event('[data-multiple="energy"]');
   assert.equal(app.document.querySelector('[data-multiple="money"]').getAttribute('aria-pressed'),'true');
   app.event('[data-multiple="money"]');assert.equal(app.document.querySelector('[data-multiple="money"]').getAttribute('aria-pressed'),'false');
-  app.event('#next-multiple');app.event('#custom-money');
+  app.event('#next-multiple');app.event('#bridge-next');app.event('#custom-money');
   app.document.querySelector('#numeric-answer').value='80,001';app.event('#number-form','submit');
   assert.match(app.document.querySelector('#quiz-error').textContent,/Confira/);
   app.document.querySelector('#numeric-answer').value='80,00';app.event('#number-form','submit');
@@ -114,18 +114,18 @@ test('seleção única avança, checklist exige resposta e correção recalcula 
 test('oferta com gasto zero mostra custo adicional em vez de inventar vantagem financeira',async()=>{
   const app=await boot();app.event('#start');
   for(const value of ['quit','social','never','notyet'])app.event(`[data-answer="${value}"]`);
-  app.event('[data-multiple="control"]');app.event('#next-multiple');app.event('#custom-money');
+  app.event('[data-multiple="control"]');app.event('#next-multiple');app.event('#bridge-next');app.event('#custom-money');
   app.document.querySelector('#numeric-answer').value='0';app.event('#number-form','submit');app.event('[data-frequency="0"]');
   app.event('#see-offer');assert.match(app.document.querySelector('.net').textContent,/29,90/);
   assert.match(app.document.querySelector('.net').textContent,/custo adicional/);
   assert.match(app.document.querySelector('.comparison-conclusion').textContent,/não cobriria/);
-  assert.equal(app.document.querySelectorAll('a').length,0);
-  assert.equal(app.document.querySelector('.offer-unavailable').disabled,true);
+  const links=[...app.document.querySelectorAll('a')];
+  assert.deepEqual(links.map(link=>link.getAttribute('href')),['https://pay.cakto.com.br/6fnsj7n']);
 });
 test('comparação mostra hoje, total incluindo assinatura e economia com decomposição clara',async()=>{
   const app=await boot();app.event('#start');
   for(const value of ['reduce','social','sometimes','difficult'])app.event(`[data-answer="${value}"]`);
-  app.event('[data-multiple="money"]');app.event('#next-multiple');app.event('#custom-money');
+  app.event('[data-multiple="money"]');app.event('#next-multiple');app.event('#bridge-next');app.event('#custom-money');
   app.document.querySelector('#numeric-answer').value='150';app.event('#number-form','submit');app.event('[data-frequency="1"]');app.event('#see-offer');
   assert.match(app.document.querySelector('.compare-today strong').textContent,/650,00/);
   assert.match(app.document.querySelector('.compare-future strong').textContent,/354,90/);
@@ -139,4 +139,26 @@ test('comparação mostra hoje, total incluindo assinatura e economia com decomp
 test('os cinco links diretos abrem o funil correto sem tela de seleção',async()=>{
   const {FUNNELS}=await model;
   for(const quiz of FUNNELS){const app=await boot('/quiz/'+quiz.id);app.event('#start');app.event('[data-answer="reduce"]');assert.equal(app.document.querySelector('h1').textContent,quiz.questions[1].title);}
+});
+test('transição antes do dinheiro, valor mensal por frequência e oferta atualizada',async()=>{
+  const app=await boot();
+  assert.match(app.document.querySelector('.intro-trust').textContent,/Sem cadastro/);
+  app.event('#start');
+  for(const value of ['reduce','social','sometimes','difficult'])app.event(`[data-answer="${value}"]`);
+  app.event('[data-multiple="money"]');app.event('#next-multiple');
+  assert.ok(app.document.querySelector('.bridge-screen'));
+  app.event('#back');assert.ok(app.document.querySelector('#next-multiple'));
+  app.event('#next-multiple');app.event('#bridge-next');
+  app.event('[data-money="100"]');
+  assert.match(app.document.querySelector('[data-frequency="2"]').textContent,/867/);
+  app.event('#back');app.event('#back');assert.ok(app.document.querySelector('.bridge-screen'));
+  app.event('#bridge-next');app.event('[data-money="100"]');app.event('[data-frequency="2"]');
+  assert.match(app.document.querySelector('.impact-equivalent').textContent,/28 anos/);
+  app.event('#see-offer');
+  const text=app.document.querySelector('.offer-screen').textContent;
+  for(const benefit of ['SOS guiado','Jornada de 30 dias','Situações difíceis','Corpo e saúde'])assert.match(text,new RegExp(benefit));
+  assert.doesNotMatch(text,/rotina que cabe|Guias para momentos/);
+  assert.match(app.document.querySelector('.price-anchor').textContent,/866,67/);
+  assert.equal(app.document.querySelectorAll('a').length,1);
+  assert.ok(app.document.querySelector('#sticky-checkout'));
 });

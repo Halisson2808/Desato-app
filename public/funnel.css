@@ -10,3 +10,43 @@
 @media(min-width:800px){.funnel-header{padding-top:30px}.funnel-main{padding-top:14px}.intro-screen{padding-top:14px}.intro-visual{margin-block:22px;height:235px}.question-screen{padding-top:20px}}
 @media(max-width:380px){.funnel-main{width:calc(100% - 32px)}h1{font-size:32px;letter-spacing:-1.2px}.intro-visual{height:185px}.ring-two{width:185px;height:185px}.ring-one{width:145px;height:145px}.visual-chip{padding:9px 11px;font-size:10px}.question-screen h1{font-size:28px}.answer-card{padding:14px;min-height:60px;font-size:14px}.question-subtitle{font-size:12px}.primary-action{font-size:14px;padding:17px 20px}.big-money{font-size:36px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* Destaque quente para dinheiro e compra */
+:root{--amber:#b8790f;--amber-soft:#fdf3df;--amber-line:#efd6a6}
+.intro-trust{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 8px;font-size:12px;color:var(--muted);margin:14px 0 0}
+.answer-card{box-shadow:0 2px 10px #173e3206}.answer-card:active{transform:scale(.99)}
+.answer-letter{font-weight:700;color:var(--green);background:var(--mint);border-color:transparent}
+.answer-card.selected .answer-letter{background:var(--green);color:white}
+/* Transição */
+.bridge-screen{text-align:center}.bridge-icon{width:72px;height:72px;margin:6px auto 4px;border-radius:24px;background:white;display:grid;place-items:center;box-shadow:0 10px 30px #265d3214}
+.bridge-screen h1{margin-top:20px}.bridge-copy{font-size:16px;line-height:1.6;color:var(--muted);max-width:420px;margin:0 auto 24px}
+.bridge-card{background:var(--amber-soft);border:1px solid var(--amber-line);border-radius:20px;padding:22px 20px;margin-bottom:24px;text-align:left}
+.bridge-card span{font-size:11px;font-weight:700;letter-spacing:1.2px;color:var(--amber)}.bridge-card p{margin:8px 0 0;font-size:16px;line-height:1.55}
+/* Frequência com valor por mês */
+.spend-chip{display:table;margin:-12px auto 20px;background:var(--amber-soft);border:1px solid var(--amber-line);color:var(--amber);font-weight:700;font-size:13px;border-radius:99px;padding:7px 14px}
+.frequency-card em{display:block;font-style:normal;font-size:10px;font-weight:700;color:var(--amber);margin-top:4px;white-space:nowrap}
+/* Impacto */
+.annual-hero{border-top:0;padding-top:4px}.annual-hero strong{font-size:clamp(42px,11vw,56px);letter-spacing:-2px;color:#ffd27a;font-variant-numeric:tabular-nums}
+.impact-screen .money-stats{margin-top:20px}.impact-screen .money-stats span{display:block}.impact-screen .money-stats .big-money{font-size:22px;letter-spacing:-.5px;margin:4px 0 0}.impact-screen .money-stats .big-money small{font-size:11px}
+.impact-equivalent{display:flex;align-items:center;gap:14px;text-align:left;margin-top:12px;background:var(--amber-soft);border:1px solid var(--amber-line);border-radius:18px;padding:16px 18px}
+.impact-equivalent>span{font-size:26px;font-weight:700;color:var(--amber)}.impact-equivalent p{margin:0;font-size:15px;line-height:1.5}.impact-equivalent strong{color:var(--amber)}
+/* Oferta */
+.offer-screen .offer-kicker{margin-top:6px}.offer-screen .offer-goals{margin-bottom:22px}
+.offer-screen .offer-price{background:white;border:2px solid var(--green);box-shadow:0 18px 40px #246c4d1a;margin-top:6px;padding:26px 20px 22px}
+.offer-screen .offer-brand{margin:0 0 14px}
+.price-anchor{font-size:14px;color:var(--muted);margin:0 0 6px}.price-anchor s{color:#9e3325;text-decoration-thickness:2px}
+.offer-screen .price-value{font-size:52px;font-weight:800;letter-spacing:-2px;line-height:1.1;margin:4px 0 2px;color:var(--ink)}.price-value small{font-size:15px;font-weight:500;letter-spacing:0;margin-left:4px;color:var(--muted)}
+.price-day{display:inline-block;margin:6px 0 18px;background:var(--amber-soft);color:var(--amber);font-weight:700;font-size:13px;border-radius:99px;padding:6px 12px}
+.checkout-action{justify-content:center;text-decoration:none;background:linear-gradient(135deg,#2a7a57,#1d6145);font-size:17px}
+.offer-trust{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;padding:0;margin:14px 0 0;font-size:12px;color:var(--muted)}.offer-trust li::before{content:"✓ ";color:var(--green);font-weight:700}
+.offer-section-title{font-size:22px;letter-spacing:-.5px;margin:34px 0 14px}
+.offer-comparison .simple-comparison{gap:10px}.offer-comparison .compare-card>strong{font-size:30px}
+.compare-saving{background:var(--amber-soft);border-color:var(--amber-line)}.compare-saving .net{color:var(--amber)}.compare-saving>span{color:var(--amber)}
+/* Botão fixo no celular */
+.sticky-cta{display:none}
+@media(max-width:700px){
+  .offer-screen{padding-bottom:84px}
+  .sticky-cta{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:10;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:#ffffffef;backdrop-filter:blur(10px);border-top:1px solid var(--line);box-shadow:0 -8px 24px #173e3212;text-align:left}
+  .sticky-cta strong{display:block;font-size:17px}.sticky-cta span{font-size:11px;color:var(--amber);font-weight:700}
+  .sticky-cta button{border:0;border-radius:14px;background:var(--green);color:white;font-weight:800;font-size:15px;padding:14px 24px;min-height:48px}
+}

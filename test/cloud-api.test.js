@@ -28,9 +28,10 @@ before(async () => {
       return answer(res,200,true);
     }
     const token = req.headers.authorization;
-    const owner = token === 'Bearer valid-alice' ? 'alice' : token === 'Bearer valid-bob' ? 'bob' : null;
+    const owner = token === 'Bearer valid-alice' ? 'alice' : token === 'Bearer valid-bob' ? 'bob' : token === 'Bearer valid-admin' ? 'admin' : token === 'Bearer valid-unconfirmed' ? 'unconfirmed' : null;
     if (!owner) return answer(res, 401, { error: 'Invalid token' });
-    if (url.pathname === '/auth/v1/user') return answer(res, 200, { id: owner, email: `${owner}@example.test` });
+    if (url.pathname === '/auth/v1/user') return answer(res, 200, ['admin', 'unconfirmed'].includes(owner) ? { id: owner, email: 'HalissonSantos13@gmail.com', email_confirmed_at: owner === 'admin' ? '2026-10-06T00:00:00Z' : null } : { id: owner, email: `${owner}@example.test` });
+    if (url.pathname === '/rest/v1/rpc/desato_has_access') return answer(res, 200, !records.get('unpaid')?.includes(owner));
     if (url.searchParams.get('user_id') !== `eq.${owner}`) return answer(res, 403, {});
     const table = url.pathname.split('desato_')[1];
     const rows = records.get(table) || [];
@@ -115,4 +116,24 @@ test('funil recebe respostas sem login e grava somente pelo RPC, sem expor leitu
   assert.equal((await request('/api/funnel')).status,404);
   assert.equal((await request('/api/funnel','POST',{...body,completed:true})).status,400);
   assert.equal((await request('/api/funnel','POST',{...body,token:'short'})).status,400);
+});
+
+test('conta sem assinatura ativa recebe 402 com link de pagamento e não lê dados', async () => {
+  records.set('unpaid', ['bob']);
+  try {
+    const blocked = await request('/api/state', 'GET', undefined, 'valid-bob');
+    assert.equal(blocked.status, 402);
+    assert.equal(blocked.data.checkoutUrl, 'https://pay.cakto.com.br/6fnsj7n');
+    assert.equal(blocked.data.store, undefined);
+    assert.equal((await request('/api/checkin', 'POST', { status: 'sober' }, 'valid-bob')).status, 402);
+    assert.equal((await request('/api/state', 'GET', undefined, 'valid-alice')).status, 200);
+  } finally { records.delete('unpaid'); }
+});
+
+test('administrador com e-mail confirmado entra sem assinatura; sem confirmação, não', async () => {
+  records.set('unpaid', ['admin', 'unconfirmed']);
+  try {
+    assert.equal((await request('/api/state', 'GET', undefined, 'valid-admin')).status, 200);
+    assert.equal((await request('/api/state', 'GET', undefined, 'valid-unconfirmed')).status, 402);
+  } finally { records.delete('unpaid'); }
 });

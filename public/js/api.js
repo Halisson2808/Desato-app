@@ -12,7 +12,7 @@ export async function api(path, options = {}) {
   try { data = await res.json(); } catch { throw new Error('Resposta inválida do servidor. Reinicie o aplicativo.'); }
   if (!res.ok) {
     if (res.status === 401 && token) await auth.signOut().catch(() => {});
-    const error = new Error(data.error || `Erro ${res.status}`); error.status = res.status; throw error;
+    const error = new Error(data.error || `Erro ${res.status}`); error.status = res.status; error.checkoutUrl = data.checkoutUrl; throw error;
   }
   return data;
 }
@@ -33,5 +33,7 @@ export const endpoints = {
   addTask: body => api('/api/routine/tasks', { method: 'POST', body: JSON.stringify(body) }),
   patchTask: (id, body) => api(`/api/routine/tasks/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteTask: id => api(`/api/routine/tasks/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  journey: body => api('/api/journey', { method: 'POST', body: JSON.stringify(body) }),
+  situation: (id, body) => api(`/api/situations/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) }),
   completeTask: body => api('/api/routine/complete', { method: 'POST', body: JSON.stringify(body) })
 };

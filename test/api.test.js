@@ -214,3 +214,21 @@ test('funil local registra visitantes separados, rejeita token errado e não alt
   assert.equal(rows[body.id].answers.goal,'reduce');assert.equal(rows[body.id].token,undefined);
   assert.deepEqual((await request('/api/state')).data.store,before);
 });
+
+test('jornada exige ordem e resposta; situações validam id e três respostas', async () => {
+  assert.equal((await request('/api/journey', 'POST', { day: 2, answer: 'Pular' })).status, 400);
+  assert.equal((await request('/api/journey', 'POST', { day: 1, answer: '   ' })).status, 400);
+  assert.equal((await request('/api/journey', 'POST', { day: 31, answer: 'Fora' })).status, 400);
+  const first = await request('/api/journey', 'POST', { day: 1, answer: 'Acordar bem' });
+  assert.equal(first.status, 200);
+  const completedAt = first.data.journey[1].completedAt;
+  assert.equal((await request('/api/journey', 'POST', { day: 1, answer: 'Editado' })).data.journey[1].completedAt, completedAt);
+  assert.equal((await request('/api/journey', 'POST', { day: 2, answer: 'Parar' })).status, 200);
+  assert.equal((await request('/api/situations/inexistente', 'PUT', { drink: 'a', refuse: 'b', leaveAt: 'c' })).status, 404);
+  assert.equal((await request('/api/situations/festa', 'PUT', { drink: 'Água', refuse: '', leaveAt: '22h' })).status, 400);
+  assert.equal((await request('/api/situations/festa', 'PUT', { drink: 'Água', refuse: 'Hoje não', leaveAt: '22h' })).status, 200);
+  const { store } = (await request('/api/state')).data;
+  assert.equal(store.journey[1].answer, 'Editado');
+  assert.deepEqual(Object.keys(store.journey), ['1', '2']);
+  assert.equal(store.situations.festa.refuse, 'Hoje não');
+});

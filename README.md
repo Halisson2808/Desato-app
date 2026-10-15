@@ -14,12 +14,9 @@ Em desenvolvimento: `npm ci`, `npm start` e `npm test`. O BAT continua funcionan
 
 ## Documentação
 
-Todos os documentos de análise, planejamento e configuração estão em [docs](docs/README.md).
+Documentos de configuração e continuidade em [docs](docs/README.md).
 
-- [Site e quizzes implementados](docs/SITE_E_QUIZZES.md)
-- [Guia do aplicativo](docs/GUIA_DO_APLICATIVO.md)
 - [Supabase e autenticação](docs/SUPABASE_SETUP.md)
-- [Pesquisa e prioridades do produto](docs/PESQUISA_E_PLANO_DESATO.md)
 - [Estado atual para continuidade](docs/CODEX_HANDOFF.md)
 
 O funil tem sete perguntas, avanço ao selecionar, checklist e resumo financeiro. As cinco versões são acessadas por links diretos. Coleta de respostas no banco e checkout foram adiados para focar na interface. A economia é uma projeção baseada nas respostas. O site foi criado localmente e ainda precisa de publicação em domínio com HTTPS.

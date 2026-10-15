@@ -11,6 +11,12 @@ const SUPABASE_URL = process.env.SUPABASE_URL || cloudConfig.url;
 const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || cloudConfig.publishableKey;
 if (!SUPABASE_KEY.startsWith('sb_publishable_')) throw new Error('Use apenas a chave pública publishable do Supabase.');
 const cloud = createCloud({ url: SUPABASE_URL, key: SUPABASE_KEY });
+// Acesso ao /app exige assinatura ativa na Cakto (tabela desato_subscriptions).
+const SUBSCRIPTION_REQUIRED = process.env.SUBSCRIPTION_REQUIRED !== 'false';
+const CHECKOUT_URL = 'https://pay.cakto.com.br/6fnsj7n';
+// Administradores entram sem assinatura; o e-mail precisa estar confirmado no Supabase Auth.
+const ADMIN_EMAILS = new Set(require('./config/access.json').adminEmails.map(email => email.trim().toLowerCase()));
+const isAdmin = user => Boolean(user?.email && user.email_confirmed_at && ADMIN_EMAILS.has(user.email.trim().toLowerCase()));
 
 const PORT = process.env.PORT || 4173;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -23,6 +29,9 @@ const funnelStore = createFunnelStore({mode:STORAGE_MODE,url:SUPABASE_URL,key:SU
 // Carrega o mesmo conteúdo ESM do navegador sem alterar o servidor CommonJS.
 const supportGuidesSource = fs.readFileSync(path.join(PUBLIC_DIR, 'js/content/support-guides.js'), 'utf8');
 const supportGuidesModule = import('data:text/javascript;base64,' + Buffer.from(supportGuidesSource).toString('base64'));
+const contentModule = (file) => import('data:text/javascript;base64,' + Buffer.from(fs.readFileSync(path.join(PUBLIC_DIR, file), 'utf8')).toString('base64'));
+const journeyModule = contentModule('js/content/journey.js');
+const situationsModule = contentModule('js/content/situations.js');
 const quizModule = import('data:text/javascript;base64,' + Buffer.from(fs.readFileSync(path.join(PUBLIC_DIR, 'js/quiz-model.js'), 'utf8')).toString('base64'));
 
 const mime = {
@@ -98,7 +107,9 @@ function defaultStore() {
     sos: {
       sessions: []
     },
-    support: { plan: null, favoriteGuideIds: [] }
+    support: { plan: null, favoriteGuideIds: [] },
+    journey: {},
+    situations: {}
   };
 }
 
@@ -124,6 +135,8 @@ function readStore() {
     store.version = Math.max(Number(store.version) || 1, 3);
     writeStore(store);
   }
+  if (!store.journey || typeof store.journey !== 'object' || Array.isArray(store.journey)) store.journey = {};
+  if (!store.situations || typeof store.situations !== 'object' || Array.isArray(store.situations)) store.situations = {};
   if (!store.support || typeof store.support !== 'object' || Array.isArray(store.support) ||
       !Array.isArray(store.support.favoriteGuideIds) ||
       !(store.support.plan === null || (typeof store.support.plan === 'object' && !Array.isArray(store.support.plan)))) {
@@ -278,6 +291,8 @@ function summary(store) {
 
 async function handleApi(req, res, pathname) {
   const { supportGuides } = await supportGuidesModule;
+  const { JOURNEY_LENGTH } = await journeyModule;
+  const { SITUATION_IDS } = await situationsModule;
   const method = req.method || 'GET';
   const body = ['POST', 'PUT', 'PATCH'].includes(method) ? await readBody(req) : {};
   if (!body || Array.isArray(body) || typeof body !== 'object') invalid('Envie um objeto JSON.');
@@ -291,6 +306,7 @@ async function handleApi(req, res, pathname) {
   if (pathname === '/api/health' && method === 'GET') return json(res, 200, { app: 'desato', mode: STORAGE_MODE });
   if (STORAGE_MODE === 'supabase') {
     const session = await cloud.authenticate(req);
+    if (SUBSCRIPTION_REQUIRED && !isAdmin(session.user) && !(await cloud.hasAccess(session))) return json(res, 402, { error: 'Sua assinatura não está ativa.', checkoutUrl: CHECKOUT_URL });
     if (pathname === '/api/quiz' && method === 'GET') return json(res, 200, { quizzes: await cloud.quizzes(session) });
     if (pathname === '/api/quiz' && method === 'POST') {
       try { body.answers = (await quizModule).validateAnswers(body.quizId, body.answers); }
@@ -298,10 +314,10 @@ async function handleApi(req, res, pathname) {
     }
     if (method === 'GET' && ['/api/state', '/api/summary', '/api/support'].includes(pathname)) {
       const store = await cloud.state(session, defaultStore);
-      if (pathname === '/api/state') return json(res, 200, { store, summary: summary(store) });
+      if (pathname === '/api/state') return json(res, 200, { store, summary: summary(store), admin: isAdmin(session.user) });
       return json(res, 200, pathname === '/api/summary' ? summary(store) : { support: store.support });
     }
-    await cloud.mutate(session, pathname, method, body, value => validDate(value ?? localISO()), supportGuides.map(guide => guide.id));
+    await cloud.mutate(session, pathname, method, body, value => validDate(value ?? localISO()), supportGuides.map(guide => guide.id), { journeyLength: JOURNEY_LENGTH, situationIds: SITUATION_IDS });
     return json(res, 200, { ok: true });
   }
   let store = readStore();
@@ -318,7 +334,8 @@ async function handleApi(req, res, pathname) {
   }
 
   if (pathname === '/api/state' && method === 'GET') {
-    return json(res, 200, { store, summary: summary(store) });
+    // Modo JSON é só desenvolvimento local: libera os atalhos de administrador.
+    return json(res, 200, { store, summary: summary(store), admin: true });
   }
 
   if (pathname === '/api/summary' && method === 'GET') {
@@ -353,6 +370,30 @@ async function handleApi(req, res, pathname) {
     store.support.favoriteGuideIds = [...ids];
     writeStore(store);
     return json(res, 200, { support: store.support });
+  }
+
+  if (pathname === '/api/journey' && method === 'POST') {
+    const day = finiteNumber(body.day, 1, JOURNEY_LENGTH, 'Dia', true);
+    const answer = typeof body.answer === 'string' ? body.answer.trim() : '';
+    if (!answer || answer.length > 500) invalid('Escreva sua resposta (até 500 caracteres).');
+    if (day > 1 && !store.journey[day - 1]) invalid('Conclua o dia anterior primeiro.');
+    store.journey[day] = { answer, completedAt: store.journey[day]?.completedAt || new Date().toISOString() };
+    writeStore(store);
+    return json(res, 200, { journey: store.journey });
+  }
+
+  if (/^\/api\/situations\/[^/]+$/.test(pathname) && method === 'PUT') {
+    const id = decodeURIComponent(pathname.split('/').pop());
+    if (!SITUATION_IDS.includes(id)) return json(res, 404, { error: 'Situação não encontrada.' });
+    const plan = {};
+    for (const key of ['drink', 'refuse', 'leaveAt']) {
+      const value = typeof body[key] === 'string' ? body[key].trim() : '';
+      if (!value || value.length > 160) invalid('Preencha as três respostas (até 160 caracteres).');
+      plan[key] = value;
+    }
+    store.situations[id] = { ...plan, updatedAt: new Date().toISOString() };
+    writeStore(store);
+    return json(res, 200, { situations: store.situations });
   }
 
   if (pathname === '/api/profile' && method === 'PUT') {

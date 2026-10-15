@@ -26,10 +26,10 @@ function icon(name, className = '') {
   const paths = {
     logo: `<path d="M5 15c4.5-.8 7.6-3.7 9.1-8.7 3.2 3.2 4.7 7.2 2.5 10.2-2 2.8-6 3.8-10.2 2.2 3.7-.2 6.8-1.8 8.5-4.5-2.7 1.8-5.8 2.2-9.9.8Z"/><path d="M14.2 7.1c.8-1.4 2.3-2.3 4.3-2.6"/>`,
     home: `<path d="m3 10 9-7 9 7"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/>`,
-    routine: `<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.2 2.2 4.8-5"/>`,
+    routine: `<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>`,
     sos: `<path d="M12 3a8 8 0 1 0 8 8c0-4.4-3.6-8-8-8Z"/><path d="M12 7v5"/><path d="M12 16h.01"/>`,
-    food: `<path d="M7 3v7"/><path d="M4 3v4a3 3 0 0 0 6 0V3"/><path d="M7 10v11"/><path d="M15 3v18"/><path d="M15 3c3 1 5 4 5 7v2h-5"/>`,
-    support: `<path d="M12 20s-8-4.8-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.2-8 10-8 10Z"/><path d="M8 12h8M12 9v6"/>`,
+    food: `<path d="M12 20s-8-4.8-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.2-8 10-8 10Z"/><path d="M6 12h3l1.5-3 3 6 1.5-3h3"/>`,
+    support: `<path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/>`,
     profile: `<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>`
   };
   return `<svg ${attrs}>${paths[name] || paths.logo}</svg>`;
@@ -37,10 +37,10 @@ function icon(name, className = '') {
 
 const navItems = [
   ['inicio', 'home', 'Início'],
-  ['rotina', 'routine', 'Meu plano'],
+  ['rotina', 'routine', 'Jornada'],
   ['sos', 'sos', 'SOS'],
-  ['alimentacao', 'food', 'Alimentação'],
-  ['apoio', 'support', 'Apoio']
+  ['alimentacao', 'food', 'Corpo'],
+  ['apoio', 'support', 'Situações']
 ];
 
 const appState = {
@@ -173,12 +173,21 @@ async function refresh(silent = true) {
     if (generation !== accountGeneration) return;
     appState.store = data.store;
     appState.summary = data.summary;
+    appState.admin = data.admin === true;
     appState.loading = false;
     appState.error = null;
+    appState.checkoutUrl = null;
     render();
   } catch (error) {
     if (generation !== accountGeneration) return;
+    // Sem assinatura ativa: sai da conta e volta para a tela de acesso.
+    if (error.status === 402) {
+      appState.authFeedback = 'Esta conta não tem assinatura ativa. Entre com o e-mail usado no pagamento.';
+      auth.signOut().catch(() => showAuth('login', appState.authFeedback));
+      return;
+    }
     if (error.status === 401) appState.store = null;
+    appState.checkoutUrl = error.status === 402 ? error.checkoutUrl || null : null;
     appState.loading = false;
     appState.error = error.message;
     render();
@@ -201,6 +210,7 @@ export async function mutate(action, successMessage = '') {
     if (generation !== accountGeneration) return false;
     appState.store = data.store;
     appState.summary = data.summary;
+    appState.admin = data.admin === true;
     render();
     if (successMessage) toast(successMessage);
     return true;
@@ -229,12 +239,18 @@ function render() {
     } };
     $('#view').innerHTML = authView.html(ctx); authView.bind(ctx); return;
   }
+  $('#app').classList.toggle('sos-mode', appState.route === 'sos');
   renderNav();
   renderHeader();
+  if (appState.checkoutUrl) {
+    $('#view').innerHTML = `<div class="card text-center"><h3>Ative sua assinatura</h3><p>Seu acesso ao Desato é liberado assim que o pagamento for confirmado. Use o mesmo e-mail desta conta (${escapeHtml(appState.authUser?.email || '')}) no pagamento.</p><a class="primary-btn" style="display:flex;align-items:center;justify-content:center;text-decoration:none" href="${escapeHtml(appState.checkoutUrl)}" target="_blank" rel="noopener">Assinar por R$ 29,90/mês</a><p><button class="secondary-btn" id="retry">Já paguei, verificar</button></p></div>`;
+    $('#retry')?.addEventListener('click', () => refresh(false));
+    return;
+  }
   if ((appState.loading && !['sos', 'apoio'].includes(appState.route)) || (!appState.store && !['sos', 'apoio'].includes(appState.route))) {
     $('#view').innerHTML = appState.loading
       ? `<div class="card text-center"><p>Carregando...</p></div>`
-      : `<div class="card"><h3>Não consegui carregar seus dados</h3><p>${escapeHtml(appState.error || 'Verifique a conexão com o servidor.')}</p><p>SOS e os guias de Apoio continuam disponíveis na navegação.</p><button class="primary-btn" id="retry">Tentar novamente</button></div>`;
+      : `<div class="card"><h3>Não consegui carregar seus dados</h3><p>${escapeHtml(appState.error || 'Verifique a conexão com o servidor.')}</p><p>O SOS continua disponível na navegação.</p><button class="primary-btn" id="retry">Tentar novamente</button></div>`;
     $('#retry')?.addEventListener('click', () => refresh(false));
     return;
   }
@@ -277,9 +293,9 @@ async function start() {
       if (nextId === appState.authUser?.id && event === 'USER_UPDATED') { appState.authUser = session.user; refresh(false); return; }
       if (nextId === appState.authUser?.id && event !== 'SIGNED_OUT') return;
       accountGeneration += 1;
-      appState.store = null; appState.summary = null; appState.error = null;
+      appState.store = null; appState.summary = null; appState.error = null; appState.admin = false;
       appState.authUser = session?.user || null; setAccountId(session?.user?.id); appState.loading = Boolean(session);
-      appState.ui.supportGuideId = null; appState.ui.supportFavoritesOnly = false;
+      appState.ui.supportGuideId = null; appState.ui.supportFavoritesOnly = false; appState.ui.journeyDay = null; appState.ui.situationId = null; appState.ui.situationDraft = null;
       if (!session) { appState.route = 'inicio'; appState.authMode = 'login'; closeActiveModal?.(); $('#modal-root').innerHTML = ''; $('#toast-root').innerHTML = ''; $('#app').inert = false; render(); }
       else { if (returnToQuiz) { location.assign('/quiz?retomar=1'); return; } appState.authMode = 'login'; appState.route = 'inicio'; refresh(false); }
     });

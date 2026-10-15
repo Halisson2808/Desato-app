@@ -29,16 +29,18 @@ before(async () => {
   `);
   await db.exec(sql);
   await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261006000200_funnel_responses.sql'),'utf8'));
+  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261011000100_journey_situations.sql'),'utf8'));
+  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261011000200_subscriptions.sql'),'utf8'));
   await db.query('insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3), ($4, $5, $6)', [alice, 'alice@example.test', { name: 'Alice' }, bob, 'bob@example.test', { name: 'Bob' }]);
 });
 after(async () => { if (db) await db.close(); });
 
-test('13 tabelas possuem RLS: 12 por conta e respostas do funil sem leitura pública', async () => {
+test('15 tabelas possuem RLS: 14 por conta e respostas do funil sem leitura pública', async () => {
   const { rows } = await db.query("select c.relname, c.relrowsecurity, c.relforcerowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname like 'desato_%' and c.relkind = 'r'");
-  assert.equal(rows.length, 13);
+  assert.equal(rows.length, 17);
   assert.ok(rows.every(row => row.relrowsecurity && (row.relname === 'desato_funnel_responses' || row.relforcerowsecurity)));
   const policies = await db.query("select tablename, qual, with_check from pg_policies where schemaname = 'public' and policyname = 'desato_owner'");
-  assert.equal(policies.rows.length, 12);
+  assert.equal(policies.rows.length, 14);
   assert.ok(policies.rows.every(row => row.qual.includes('auth.uid()') && row.with_check.includes('auth.uid()')));
 });
 
@@ -141,4 +143,36 @@ test('excluir uma conta elimina apenas os dados dela', async () => {
     assert.equal((await db.query(`select * from public.desato_${name} where user_id = $1`, [alice])).rows.length, 0);
   }
   assert.equal((await db.query('select * from public.desato_profiles where user_id = $1', [bob])).rows.length, 1);
+});
+
+test('jornada e situações ficam isoladas por usuário e validam valores', async () => {
+  await db.query('insert into auth.users (id, email) values ($1, $2), ($3, $4) on conflict do nothing', [alice, 'alice@example.test', bob, 'bob@example.test']);
+  await asUser(alice, async () => {
+    await db.query("insert into public.desato_journey_days (user_id, day, answer) values ($1, 1, 'Meu motivo')", [alice]);
+    await db.query("insert into public.desato_situation_plans (user_id, situation_id, drink, refuse, leave_at) values ($1, 'festa', 'Água', 'Hoje não', '22h')", [alice]);
+    await assert.rejects(db.query("insert into public.desato_journey_days (user_id, day) values ($1, 31)", [alice]));
+    await assert.rejects(db.query("insert into public.desato_situation_plans (user_id, situation_id, drink, refuse, leave_at) values ($1, 'outra', 'a', 'b', 'c')", [alice]));
+    await assert.rejects(db.query("insert into public.desato_journey_days (user_id, day) values ($1, 2)", [bob]));
+  });
+  await asUser(bob, async () => {
+    assert.equal((await db.query('select * from public.desato_journey_days')).rows.length, 0);
+    assert.equal((await db.query('select * from public.desato_situation_plans')).rows.length, 0);
+  });
+});
+
+test('assinatura: só a ativa ou cancelada no período libera, e clientes não leem a tabela', async () => {
+  const access = id => asUser(id, async () => (await db.query('select public.desato_has_access() as ok')).rows[0].ok);
+  assert.equal(await access(alice), false);
+  await db.query("insert into public.desato_subscriptions (email, status, current_period_end) values ('alice@example.test', 'active', now() + interval '30 days')");
+  assert.equal(await access(alice), true);
+  assert.equal(await access(bob), false);
+  await asUser(alice, () => assert.rejects(db.query('select * from public.desato_subscriptions'), error => error.code === '42501'));
+  await asUser(alice, () => assert.rejects(db.query("insert into public.desato_subscriptions (email, status) values ('bob@example.test', 'active')"), error => error.code === '42501'));
+  await db.query("update public.desato_subscriptions set status = 'canceled' where email = 'alice@example.test'");
+  assert.equal(await access(alice), true);
+  await db.query("update public.desato_subscriptions set current_period_end = now() - interval '1 day'");
+  assert.equal(await access(alice), false);
+  await db.query("update public.desato_subscriptions set status = 'refunded', current_period_end = now() + interval '9 days'");
+  assert.equal(await access(alice), false);
+  await assert.rejects(db.query("insert into public.desato_subscriptions (email, status) values ('Bob@Example.test', 'active')"));
 });

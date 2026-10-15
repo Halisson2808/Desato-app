@@ -1,8 +1,8 @@
-const CACHE = 'app-mvp-v18';
+const CACHE = 'app-mvp-v20';
 const ASSETS = ['/', '/app', '/quiz', '/site.css', '/funnel.css', '/js/site.js', '/js/quiz.js', '/js/quiz-model.js', '/styles.css', '/js/app.js', '/js/api.js', '/js/utils.js',
   '/js/views/home.js', '/js/views/routine.js', '/js/views/sos.js',
   '/js/views/food.js', '/js/views/profile.js', '/js/views/support.js',
-  '/js/content/support-guides.js', '/js/content/home-progress.js', '/js/auth.js', '/js/views/auth.js', '/vendor/supabase.js', '/icon.svg', '/manifest.webmanifest'];
+  '/js/content/support-guides.js', '/js/content/home-progress.js', '/js/content/journey.js', '/js/content/situations.js', '/js/content/body.js', '/js/auth.js', '/js/views/auth.js', '/vendor/supabase.js', '/icon.svg', '/manifest.webmanifest'];
 self.addEventListener('install', event => event.waitUntil(
   caches.open(CACHE).then(cache => cache.addAll(ASSETS))
 ));
