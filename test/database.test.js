@@ -31,16 +31,19 @@ before(async () => {
   await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261006000200_funnel_responses.sql'),'utf8'));
   await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261011000100_journey_situations.sql'),'utf8'));
   await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261011000200_subscriptions.sql'),'utf8'));
+  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261015000100_user_roles.sql'),'utf8'));
+  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261015000200_drop_legacy_tables.sql'),'utf8'));
   await db.query('insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3), ($4, $5, $6)', [alice, 'alice@example.test', { name: 'Alice' }, bob, 'bob@example.test', { name: 'Bob' }]);
 });
 after(async () => { if (db) await db.close(); });
 
-test('15 tabelas possuem RLS: 14 por conta e respostas do funil sem leitura pública', async () => {
+test('11 tabelas possuem RLS: 7 por conta, papéis só leitura, assinaturas e funil sem leitura pública', async () => {
   const { rows } = await db.query("select c.relname, c.relrowsecurity, c.relforcerowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname like 'desato_%' and c.relkind = 'r'");
-  assert.equal(rows.length, 17);
+  assert.equal(rows.length, 11);
+  assert.ok(!rows.some(row => /routine|groceries|recipe|support|quiz_answers/.test(row.relname)));
   assert.ok(rows.every(row => row.relrowsecurity && (row.relname === 'desato_funnel_responses' || row.relforcerowsecurity)));
   const policies = await db.query("select tablename, qual, with_check from pg_policies where schemaname = 'public' and policyname = 'desato_owner'");
-  assert.equal(policies.rows.length, 14);
+  assert.equal(policies.rows.length, 7);
   assert.ok(policies.rows.every(row => row.qual.includes('auth.uid()') && row.with_check.includes('auth.uid()')));
 });
 
@@ -62,13 +65,12 @@ test('visitante registra o próprio funil sem ler respostas e token errado não 
   await asUser(alice,()=>assert.rejects(db.query('select * from public.desato_funnel_responses'),error=>error.code==='42501'));
 });
 
-test('cadastro cria perfil e rotina, sem inventar consumo, gastos ou respostas do quiz', async () => {
+test('cadastro cria perfil, gastos zerados e papel de usuário, sem inventar consumo', async () => {
   await asUser(alice, async () => {
     assert.equal((await db.query('select name from public.desato_profiles')).rows[0].name, 'Alice');
-    assert.equal((await db.query('select * from public.desato_routine_tasks')).rows.length, 6);
+    assert.equal((await db.query('select role from public.desato_user_roles')).rows[0].role, 'user');
     assert.equal(Number((await db.query('select spend_per_outing from public.desato_money')).rows[0].spend_per_outing), 0);
     assert.equal((await db.query('select * from public.desato_checkins')).rows.length, 0);
-    assert.equal((await db.query('select * from public.desato_quiz_answers')).rows.length, 0);
   });
 });
 
@@ -87,17 +89,12 @@ test('usuário grava e lê seus registros; outro usuário não consegue ler, alt
   });
 });
 
-test('dados de Apoio, hidratação, compras, SOS e quiz ficam isolados por usuário', async () => {
+test('hidratação e SOS ficam isolados por usuário', async () => {
   await asUser(alice, async () => {
-    await db.query("insert into public.desato_support_plans (user_id, situation, first_action) values ($1, 'Encontro', 'Dizer minha decisão')", [alice]);
-    await db.query("insert into public.desato_support_favorites (user_id, guide_id) values ($1, 'retomar')", [alice]);
-    await db.query("insert into public.desato_recipe_favorites (user_id, recipe_id) values ($1, 'omelete')", [alice]);
     await db.query("insert into public.desato_hydration (user_id, day, cups) values ($1, '2026-10-06', 3)", [alice]);
-    await db.query("insert into public.desato_groceries (user_id, text) values ($1, 'Maçã')", [alice]);
     await db.query("insert into public.desato_sos_sessions (user_id, action) values ($1, 'completed-flow')", [alice]);
-    await db.query("insert into public.desato_quiz_answers (user_id, quiz_version, answers) values ($1, 'v1', $2)", [alice, { spendPerOuting: 80, outingsPerWeek: 2 }]);
   });
-  const tables = ['support_plans', 'support_favorites', 'recipe_favorites', 'hydration', 'groceries', 'sos_sessions', 'quiz_answers'];
+  const tables = ['hydration', 'sos_sessions'];
   for (const name of tables) {
     await asUser(bob, async () => assert.equal((await db.query(`select * from public.desato_${name}`)).rows.length, 0));
     await asUser(alice, async () => assert.equal((await db.query(`select * from public.desato_${name}`)).rows.length, 1));
@@ -107,39 +104,24 @@ test('dados de Apoio, hidratação, compras, SOS e quiz ficam isolados por usuá
 test('anon não tem acesso às tabelas nem às funções privilegiadas', async () => {
   await db.exec('set role anon');
   try {
-    for (const name of ['profiles', 'money', 'checkins', 'routine_tasks', 'routine_completions', 'hydration', 'groceries', 'sos_sessions', 'support_plans', 'support_favorites', 'recipe_favorites', 'quiz_answers']) {
+    for (const name of ['profiles', 'money', 'checkins', 'hydration', 'sos_sessions', 'journey_days', 'situation_plans']) {
       await assert.rejects(db.query(`select * from public.desato_${name}`), error => error.code === '42501');
     }
     await assert.rejects(db.query('select public.desato_on_signup()'), error => error.code === '42501');
   } finally { await db.exec('reset role'); }
 });
 
-test('chave composta impede concluir tarefa pertencente a outro usuário', async () => {
-  await asUser(alice, () => db.query("insert into public.desato_routine_tasks (user_id, id, title, period) values ($1, 'somente-alice', 'Caminhar', 'tarde')", [alice]));
-  await asUser(bob, async () => {
-    await assert.rejects(db.query("insert into public.desato_routine_completions (user_id, task_id, day) values ($1, 'somente-alice', '2026-10-06')", [bob]), error => error.code === '23503');
-  });
-  await asUser(alice, async () => {
-    await db.query("insert into public.desato_routine_completions (user_id, task_id, day) values ($1, 'somente-alice', '2026-10-06')", [alice]);
-    await db.query("delete from public.desato_routine_tasks where id = 'somente-alice'");
-    assert.equal((await db.query("select * from public.desato_routine_completions where task_id = 'somente-alice'")).rows.length, 0);
-  });
-});
-
-test('banco rejeita status, valores, favoritos e planos inválidos', async () => {
+test('banco rejeita status e valores inválidos', async () => {
   await asUser(alice, async () => {
     await assert.rejects(db.query("insert into public.desato_checkins (user_id, day, status) values ($1, '2026-10-08', 'invalid')", [alice]), error => error.code === '23514');
     await assert.rejects(db.query('update public.desato_money set spend_per_outing = -1'), error => error.code === '23514');
     await assert.rejects(db.query("insert into public.desato_hydration (user_id, day, cups) values ($1, '2026-10-07', 9)", [alice]), error => error.code === '23514');
-    await assert.rejects(db.query("insert into public.desato_support_favorites (user_id, guide_id) values ($1, 'invalid')", [alice]), error => error.code === '23514');
-    await assert.rejects(db.query("update public.desato_support_plans set first_action = ' '"), error => error.code === '23514');
-    await assert.rejects(db.query("insert into public.desato_quiz_answers (user_id, quiz_version, answers) values ($1, 'v2', '[]')", [alice]), error => error.code === '23514');
   });
 });
 
 test('excluir uma conta elimina apenas os dados dela', async () => {
   await db.query('delete from auth.users where id = $1', [alice]);
-  for (const name of ['profiles', 'money', 'checkins', 'routine_tasks', 'routine_completions', 'hydration', 'groceries', 'sos_sessions', 'support_plans', 'support_favorites', 'recipe_favorites', 'quiz_answers']) {
+  for (const name of ['profiles', 'money', 'checkins', 'hydration', 'sos_sessions', 'journey_days', 'situation_plans']) {
     assert.equal((await db.query(`select * from public.desato_${name} where user_id = $1`, [alice])).rows.length, 0);
   }
   assert.equal((await db.query('select * from public.desato_profiles where user_id = $1', [bob])).rows.length, 1);
@@ -175,4 +157,21 @@ test('assinatura: só a ativa ou cancelada no período libera, e clientes não l
   await db.query("update public.desato_subscriptions set status = 'refunded', current_period_end = now() + interval '9 days'");
   assert.equal(await access(alice), false);
   await assert.rejects(db.query("insert into public.desato_subscriptions (email, status) values ('Bob@Example.test', 'active')"));
+});
+
+test('papéis: novo cadastro vira usuário, administrador acessa sem assinatura e ninguém se promove', async () => {
+  const carol = '33333333-3333-4333-8333-333333333333', owner = '44444444-4444-4444-8444-444444444444';
+  await db.query('insert into auth.users (id, email) values ($1, $2), ($3, $4) on conflict do nothing', [carol, 'carol@example.test', owner, 'halissonsantos13@gmail.com']);
+  assert.equal((await db.query('select role from public.desato_user_roles where user_id = $1', [carol])).rows[0].role, 'user');
+  await db.query("update public.desato_user_roles set role = 'admin' where user_id = $1", [owner]);
+  await asUser(owner, async () => {
+    assert.equal((await db.query('select public.desato_is_admin() as admin')).rows[0].admin, true);
+    assert.equal((await db.query('select public.desato_has_access() as access')).rows[0].access, true);
+  });
+  await asUser(carol, async () => {
+    assert.equal((await db.query('select public.desato_is_admin() as admin')).rows[0].admin, false);
+    assert.equal((await db.query('select public.desato_has_access() as access')).rows[0].access, false);
+    assert.equal((await db.query('select * from public.desato_user_roles')).rows.length, 1);
+    await assert.rejects(db.query("update public.desato_user_roles set role = 'admin' where user_id = $1", [carol]));
+  });
 });

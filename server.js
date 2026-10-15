@@ -14,9 +14,6 @@ const cloud = createCloud({ url: SUPABASE_URL, key: SUPABASE_KEY });
 // Acesso ao /app exige assinatura ativa na Cakto (tabela desato_subscriptions).
 const SUBSCRIPTION_REQUIRED = process.env.SUBSCRIPTION_REQUIRED !== 'false';
 const CHECKOUT_URL = 'https://pay.cakto.com.br/6fnsj7n';
-// Administradores entram sem assinatura; o e-mail precisa estar confirmado no Supabase Auth.
-const ADMIN_EMAILS = new Set(require('./config/access.json').adminEmails.map(email => email.trim().toLowerCase()));
-const isAdmin = user => Boolean(user?.email && user.email_confirmed_at && ADMIN_EMAILS.has(user.email.trim().toLowerCase()));
 
 const PORT = process.env.PORT || 4173;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -26,9 +23,6 @@ const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : pat
 const STORE_FILE = path.join(DATA_DIR, 'store.json');
 const { createFunnelStore } = require('./lib/funnel.cjs');
 const funnelStore = createFunnelStore({mode:STORAGE_MODE,url:SUPABASE_URL,key:SUPABASE_KEY,dataDir:DATA_DIR});
-// Carrega o mesmo conteúdo ESM do navegador sem alterar o servidor CommonJS.
-const supportGuidesSource = fs.readFileSync(path.join(PUBLIC_DIR, 'js/content/support-guides.js'), 'utf8');
-const supportGuidesModule = import('data:text/javascript;base64,' + Buffer.from(supportGuidesSource).toString('base64'));
 const contentModule = (file) => import('data:text/javascript;base64,' + Buffer.from(fs.readFileSync(path.join(PUBLIC_DIR, file), 'utf8')).toString('base64'));
 const journeyModule = contentModule('js/content/journey.js');
 const situationsModule = contentModule('js/content/situations.js');
@@ -81,33 +75,10 @@ function defaultStore() {
       currency: 'BRL'
     },
     checkins,
-    routine: {
-      tasks: [
-        { id: 'agua', title: 'Beber um copo de água ao acordar', period: 'manha', icon: '💧', active: true },
-        { id: 'cafe', title: 'Tomar um café da manhã simples', period: 'manha', icon: '🍌', active: true },
-        { id: 'caminhada', title: 'Caminhar por 15 minutos', period: 'tarde', icon: '🚶', active: true },
-        { id: 'atividade', title: 'Fazer algo que ocupe a mente', period: 'tarde', icon: '🎯', active: true },
-        { id: 'jantar', title: 'Jantar no horário', period: 'noite', icon: '🍲', active: true },
-        { id: 'desacelerar', title: 'Desacelerar antes de dormir', period: 'noite', icon: '🌙', active: true }
-      ],
-      completions: {}
-    },
     hydration: {},
-    groceries: [
-      { id: 'banana', text: 'Banana', checked: false },
-      { id: 'aveia', text: 'Aveia', checked: false },
-      { id: 'ovos', text: 'Ovos', checked: false },
-      { id: 'arroz', text: 'Arroz', checked: false },
-      { id: 'feijao', text: 'Feijão', checked: false },
-      { id: 'frango', text: 'Frango', checked: false }
-    ],
-    recipes: {
-      favorites: []
-    },
     sos: {
       sessions: []
     },
-    support: { plan: null, favoriteGuideIds: [] },
     journey: {},
     situations: {}
   };
@@ -121,8 +92,7 @@ function ensureStore() {
   }
   const parsed = JSON.parse(fs.readFileSync(STORE_FILE, 'utf8'));
   if (!parsed || !parsed.profile || !parsed.money || !parsed.checkins ||
-      !Array.isArray(parsed.routine?.tasks) || !parsed.routine.completions ||
-      !parsed.hydration || !Array.isArray(parsed.groceries) || !Array.isArray(parsed.sos?.sessions)) {
+      !parsed.hydration || !Array.isArray(parsed.sos?.sessions)) {
     throw new Error('Arquivo de dados inválido. Restaure uma cópia válida; o original foi preservado.');
   }
 }
@@ -130,18 +100,8 @@ function ensureStore() {
 function readStore() {
   ensureStore();
   const store = JSON.parse(fs.readFileSync(STORE_FILE, 'utf8'));
-  if (!Object.hasOwn(store, 'support')) {
-    store.support = { plan: null, favoriteGuideIds: [] };
-    store.version = Math.max(Number(store.version) || 1, 3);
-    writeStore(store);
-  }
   if (!store.journey || typeof store.journey !== 'object' || Array.isArray(store.journey)) store.journey = {};
   if (!store.situations || typeof store.situations !== 'object' || Array.isArray(store.situations)) store.situations = {};
-  if (!store.support || typeof store.support !== 'object' || Array.isArray(store.support) ||
-      !Array.isArray(store.support.favoriteGuideIds) ||
-      !(store.support.plan === null || (typeof store.support.plan === 'object' && !Array.isArray(store.support.plan)))) {
-    throw new Error('Dados de apoio inválidos. O arquivo foi preservado.');
-  }
   return store;
 }
 
@@ -269,14 +229,6 @@ function computeMoney(store) {
   return { weekly, monthly, annual, dailyEquivalent, saved, cleanDays };
 }
 
-function todayRoutine(store) {
-  const key = localISO();
-  const completed = store.routine.completions[key] || {};
-  const active = store.routine.tasks.filter(t => t.active !== false);
-  const done = active.filter(t => completed[t.id]).length;
-  return { done, total: active.length };
-}
-
 function summary(store) {
   return {
     today: localISO(),
@@ -284,13 +236,11 @@ function summary(store) {
     cleanDaysTotal: cleanDaysTotal(store),
     month: monthStats(store),
     money: computeMoney(store),
-    routine: todayRoutine(store),
     todayCheckin: store.checkins[localISO()] || null
   };
 }
 
 async function handleApi(req, res, pathname) {
-  const { supportGuides } = await supportGuidesModule;
   const { JOURNEY_LENGTH } = await journeyModule;
   const { SITUATION_IDS } = await situationsModule;
   const method = req.method || 'GET';
@@ -306,32 +256,17 @@ async function handleApi(req, res, pathname) {
   if (pathname === '/api/health' && method === 'GET') return json(res, 200, { app: 'desato', mode: STORAGE_MODE });
   if (STORAGE_MODE === 'supabase') {
     const session = await cloud.authenticate(req);
-    if (SUBSCRIPTION_REQUIRED && !isAdmin(session.user) && !(await cloud.hasAccess(session))) return json(res, 402, { error: 'Sua assinatura não está ativa.', checkoutUrl: CHECKOUT_URL });
-    if (pathname === '/api/quiz' && method === 'GET') return json(res, 200, { quizzes: await cloud.quizzes(session) });
-    if (pathname === '/api/quiz' && method === 'POST') {
-      try { body.answers = (await quizModule).validateAnswers(body.quizId, body.answers); }
-      catch (error) { invalid(error.message); }
-    }
-    if (method === 'GET' && ['/api/state', '/api/summary', '/api/support'].includes(pathname)) {
+    // Papel (admin/usuário) fica no banco: desato_user_roles. Admin tem acesso sem assinatura.
+    if (SUBSCRIPTION_REQUIRED && !(await cloud.hasAccess(session))) return json(res, 402, { error: 'Sua assinatura não está ativa.', checkoutUrl: CHECKOUT_URL });
+    if (method === 'GET' && ['/api/state', '/api/summary'].includes(pathname)) {
       const store = await cloud.state(session, defaultStore);
-      if (pathname === '/api/state') return json(res, 200, { store, summary: summary(store), admin: isAdmin(session.user) });
-      return json(res, 200, pathname === '/api/summary' ? summary(store) : { support: store.support });
+      if (pathname === '/api/state') return json(res, 200, { store, summary: summary(store), admin: await cloud.isAdmin(session) });
+      return json(res, 200, summary(store));
     }
-    await cloud.mutate(session, pathname, method, body, value => validDate(value ?? localISO()), supportGuides.map(guide => guide.id), { journeyLength: JOURNEY_LENGTH, situationIds: SITUATION_IDS });
+    await cloud.mutate(session, pathname, method, body, value => validDate(value ?? localISO()), { journeyLength: JOURNEY_LENGTH, situationIds: SITUATION_IDS });
     return json(res, 200, { ok: true });
   }
   let store = readStore();
-
-  if (pathname === '/api/quiz' && method === 'GET') return json(res, 200, { quizzes: Object.values(store.quizzes || {}) });
-  if (pathname === '/api/quiz' && method === 'POST') {
-    let answers;
-    try { answers = (await quizModule).validateAnswers(body.quizId, body.answers); }
-    catch (error) { invalid(error.message); }
-    if (!store.quizzes) store.quizzes = {};
-    store.quizzes[body.quizId] = { quiz_version: `${body.quizId}-v1`, answers, updated_at: new Date().toISOString() };
-    writeStore(store);
-    return json(res, 200, { ok: true });
-  }
 
   if (pathname === '/api/state' && method === 'GET') {
     // Modo JSON é só desenvolvimento local: libera os atalhos de administrador.
@@ -340,36 +275,6 @@ async function handleApi(req, res, pathname) {
 
   if (pathname === '/api/summary' && method === 'GET') {
     return json(res, 200, summary(store));
-  }
-
-  if (pathname === '/api/support' && method === 'GET') {
-    return json(res, 200, { support: store.support });
-  }
-
-  if (pathname === '/api/support/plan' && method === 'PUT') {
-    const plan = {};
-    for (const key of ['situation', 'firstAction', 'exit', 'help']) {
-      const value = Object.hasOwn(body, key) ? body[key] : '';
-      if (typeof value !== 'string' || value.trim().length > 500) invalid('Use textos de até 500 caracteres no plano.');
-      plan[key] = value.trim();
-    }
-    if (!plan.situation || !plan.firstAction) invalid('Preencha a situação e sua primeira ação.');
-    plan.updatedAt = new Date().toISOString();
-    store.support.plan = plan;
-    writeStore(store);
-    return json(res, 200, { support: store.support });
-  }
-
-  if (pathname.startsWith('/api/support/favorites/') && method === 'PATCH') {
-    const id = decodeURIComponent(pathname.slice('/api/support/favorites/'.length));
-    if (!supportGuides.some(guide => guide.id === id)) return json(res, 404, { error: 'Guia não encontrado.' });
-    const favorite = boolean(body.favorite);
-    const ids = new Set(store.support.favoriteGuideIds);
-    if (favorite) ids.add(id);
-    else ids.delete(id);
-    store.support.favoriteGuideIds = [...ids];
-    writeStore(store);
-    return json(res, 200, { support: store.support });
   }
 
   if (pathname === '/api/journey' && method === 'POST') {
@@ -451,81 +356,6 @@ async function handleApi(req, res, pathname) {
     return json(res, 200, { session });
   }
 
-  if (pathname === '/api/groceries' && method === 'POST') {
-    const text = String(body.text || '').trim();
-    if (!text) return json(res, 400, { error: 'Informe um item.' });
-    const item = { id: `g_${randomUUID()}`, text: text.slice(0, 80), checked: false };
-    store.groceries.push(item);
-    writeStore(store);
-    return json(res, 200, { item, groceries: store.groceries });
-  }
-
-  if (pathname.startsWith('/api/groceries/') && method === 'PATCH') {
-    const id = decodeURIComponent(pathname.split('/').pop());
-    const item = store.groceries.find(g => g.id === id);
-    if (!item) return json(res, 404, { error: 'Item não encontrado.' });
-    if ('checked' in body) item.checked = boolean(body.checked);
-    if ('text' in body) item.text = String(body.text).trim().slice(0, 80) || item.text;
-    writeStore(store);
-    return json(res, 200, { item, groceries: store.groceries });
-  }
-
-  if (pathname.startsWith('/api/groceries/') && method === 'DELETE') {
-    const id = decodeURIComponent(pathname.split('/').pop());
-    store.groceries = store.groceries.filter(g => g.id !== id);
-    writeStore(store);
-    return json(res, 200, { groceries: store.groceries });
-  }
-
-  if (pathname === '/api/routine/tasks' && method === 'POST') {
-    const title = String(body.title || '').trim();
-    if (!title) return json(res, 400, { error: 'Informe uma tarefa.' });
-    const task = {
-      id: `t_${randomUUID()}`,
-      title: title.slice(0, 100),
-      period: ['manha', 'tarde', 'noite'].includes(body.period) ? body.period : 'tarde',
-      icon: String(body.icon || '✓').slice(0, 4),
-      active: true
-    };
-    store.routine.tasks.push(task);
-    writeStore(store);
-    return json(res, 200, { task, routine: store.routine, summary: summary(store) });
-  }
-
-  if (pathname.startsWith('/api/routine/tasks/') && method === 'PATCH') {
-    const id = decodeURIComponent(pathname.split('/').pop());
-    const task = store.routine.tasks.find(t => t.id === id);
-    if (!task) return json(res, 404, { error: 'Tarefa não encontrada.' });
-    if ('title' in body) task.title = String(body.title).trim().slice(0, 100) || task.title;
-    if ('period' in body && ['manha', 'tarde', 'noite'].includes(body.period)) task.period = body.period;
-    if ('active' in body) task.active = boolean(body.active);
-    if ('icon' in body) task.icon = String(body.icon).slice(0, 4) || task.icon;
-    writeStore(store);
-    return json(res, 200, { task, routine: store.routine, summary: summary(store) });
-  }
-
-  if (pathname.startsWith('/api/routine/tasks/') && method === 'DELETE') {
-    const id = decodeURIComponent(pathname.split('/').pop());
-    store.routine.tasks = store.routine.tasks.filter(t => t.id !== id);
-    for (const date of Object.keys(store.routine.completions)) {
-      delete store.routine.completions[date][id];
-    }
-    writeStore(store);
-    return json(res, 200, { routine: store.routine, summary: summary(store) });
-  }
-
-  if (pathname === '/api/routine/complete' && method === 'POST') {
-    const date = validDate(body.date ?? localISO());
-    const taskId = String(body.taskId || '');
-    if (!store.routine.tasks.some(t => t.id === taskId)) {
-      return json(res, 404, { error: 'Tarefa não encontrada.' });
-    }
-    if (!store.routine.completions[date]) store.routine.completions[date] = {};
-    store.routine.completions[date][taskId] = boolean(body.completed);
-    writeStore(store);
-    return json(res, 200, { completions: store.routine.completions[date], summary: summary(store) });
-  }
-
   return json(res, 404, { error: 'Rota não encontrada.' });
 }
 
@@ -569,13 +399,18 @@ function serveStatic(req, res, pathname) {
 
 if (STORAGE_MODE === 'json') ensureStore();
 
+function sameHost(origin, host) {
+  try { const parsed = new URL(origin); return ['http:', 'https:'].includes(parsed.protocol) && parsed.host === host; } catch { return false; }
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     const cloudOrigin = new URL(SUPABASE_URL).origin;
     res.setHeader('Content-Security-Policy', `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' ${cloudOrigin} ${cloudOrigin.replace(/^http/, 'ws')}; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'`);
     res.setHeader('Referrer-Policy', 'same-origin');
-    if (!['GET', 'HEAD'].includes(req.method) && req.headers.origin && req.headers.origin !== `http://${req.headers.host}`) {
+    // Compara só o host: em produção (Vercel) a página é https e o servidor recebe a requisição já sem TLS.
+    if (!['GET', 'HEAD'].includes(req.method) && req.headers.origin && !sameHost(req.headers.origin, req.headers.host)) {
       return json(res, 403, { error: 'Origem não autorizada.' });
     }
     const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);

@@ -50,3 +50,83 @@
   .sticky-cta strong{display:block;font-size:17px}.sticky-cta span{font-size:11px;color:var(--amber);font-weight:700}
   .sticky-cta button{border:0;border-radius:14px;background:var(--green);color:white;font-weight:800;font-size:15px;padding:14px 24px;min-height:48px}
 }
+
+/* v3: tipografia, toque no celular, telas compactas e oferta refeita */
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button,input{font-family:inherit}
+.progress-track{margin:4px 0 28px}
+/* Hover só em mouse; no celular o dedo não deixa cartão "marcado" na tela seguinte */
+@media (hover:none){
+  .answer-card:hover,.amount-card:hover,.frequency-card:hover{border-color:var(--line);background:#ffffffcf}
+  .amount-card:hover,.frequency-card:hover{background:white}
+  .primary-action:hover:not(:disabled){background:var(--green);transform:none}
+}
+button:focus:not(:focus-visible){outline:none}
+.answer-card.selected{background:#e5f1e0;border-color:var(--green)}
+/* Tela de múltipla escolha cabe numa tela só */
+.compact-screen h1{font-size:clamp(24px,6.4vw,32px);margin-bottom:6px}
+.compact-screen .question-subtitle{margin-bottom:16px}
+.compact-list{gap:8px}
+.compact-list .answer-card{min-height:52px;padding:11px 14px;font-size:14px}
+.compact-list+.primary-action{margin-top:16px}
+/* Frequência: 1 a 7 + outra */
+.frequency-options{grid-template-columns:repeat(4,1fr)}
+.custom-frequency-card strong{color:var(--green)}
+/* Resultado sem cabeçalho */
+.result-screen h1{margin-top:6px}
+/* ---------- Oferta ---------- */
+.offer-screen{padding-top:8px;animation:enter .2s ease-out}
+.offer-hero{text-align:center;margin:8px 0 24px}
+.offer-hero h1{font-size:clamp(28px,7.5vw,38px);line-height:1.12;letter-spacing:-1.2px;margin:0 0 10px}
+.offer-hero h1 em{font-style:normal;color:var(--green)}
+.offer-hero p{margin:0 auto;max-width:400px;font-size:15px;line-height:1.55;color:var(--muted)}
+.offer-screen .benefit-list{display:grid;gap:10px;text-align:left}
+.offer-screen .benefit-item{display:flex;gap:14px;align-items:flex-start;background:white;border:1px solid var(--line);border-radius:18px;padding:16px}
+.benefit-icon{flex:0 0 auto;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--mint);color:var(--green)}
+.benefit-icon svg{width:22px;height:22px}
+.offer-screen .benefit-item h2{font-size:16px;font-weight:700;margin:1px 0 4px;letter-spacing:-.2px}
+.offer-screen .benefit-item p{font-size:14px;line-height:1.5;margin:0;color:var(--muted)}
+.offer-value{margin-top:34px;text-align:center}
+.offer-value>h2{font-size:24px;letter-spacing:-.6px;margin:0 0 16px}
+.value-compare{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.value-compare>div{background:white;border:1px solid var(--line);border-radius:18px;padding:18px 12px;display:grid;gap:6px}
+.value-compare span{font-size:13px;color:var(--muted)}
+.value-compare strong{font-size:26px;letter-spacing:-.8px}
+.value-compare .value-desato{border:2px solid var(--green);background:#f3faf4}
+.value-compare .value-desato strong{color:var(--green)}
+.value-note{font-size:15px;font-weight:600;margin:14px 0 0}
+.offer-screen .offer-comparison{margin-top:18px;padding:20px 16px;text-align:center}
+.offer-screen .comparison-intro{margin:0 0 12px;font-size:14px}
+.offer-screen .scenario-options{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:16px}
+.offer-screen .scenario-options button{border-radius:12px;padding:10px 4px;font-size:13px}
+.offer-screen .simple-comparison{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.offer-screen .compare-card{border-radius:14px;padding:14px 10px;text-align:left}
+.offer-screen .compare-card>span{font-size:12px;letter-spacing:0;font-weight:600;color:var(--muted)}
+.offer-screen .compare-card>strong{font-size:20px;margin:6px 0 0;letter-spacing:-.5px}
+.offer-screen .compare-card strong small{font-size:12px}
+.offer-screen .compare-breakdown{display:grid;gap:2px;justify-content:start;margin-top:8px;padding-top:8px;font-size:11px;color:var(--muted)}
+.offer-screen .compare-saving{margin-top:10px;border-radius:14px;padding:14px;background:#eef7ec;border:1px solid #c6dfc0}
+.offer-screen .compare-saving>span{font-size:12px;font-weight:700;letter-spacing:0;color:var(--green)}
+.offer-screen .compare-saving .net{font-size:30px;margin:4px 0 0;color:var(--green)}
+.offer-screen .compare-saving .net span{display:inline;font-size:13px;font-weight:600}
+.offer-screen .compare-saving.extra-cost{background:#fff6ea;border-color:#ecd3a9}
+.offer-screen .compare-saving.extra-cost>span,.offer-screen .compare-saving.extra-cost .net{color:#835321}
+.offer-screen .offer-price{margin-top:30px;background:var(--ink);color:white;border:0;border-radius:24px;padding:28px 22px 24px;text-align:center;box-shadow:0 20px 44px #173e3226}
+.price-label{margin:0;font-size:12px;font-weight:700;letter-spacing:1.4px;color:#a9cdb6}
+.offer-screen .price-value{font-size:56px;font-weight:800;letter-spacing:-2.4px;line-height:1.05;margin:10px 0 4px;color:white}
+.offer-screen .price-value small{font-size:16px;font-weight:500;letter-spacing:0;color:#c6dac8;margin-left:4px}
+.offer-screen .price-day{display:block;background:none;padding:0;border-radius:0;margin:0 0 20px;font-size:14px;font-weight:500;color:#c6dac8}
+.offer-screen .checkout-action{background:#7ee0bb;color:#06261f;justify-content:center;text-decoration:none;font-size:17px;font-weight:800;box-shadow:none}
+.offer-screen .checkout-action:hover{background:#9bead0}
+.offer-screen .offer-trust{display:block;margin:14px 0 0;font-size:12px;color:#a9cdb6}
+.offer-screen .offer-trust li::before{content:none}
+.offer-screen .offer-endnote{color:#a9cdb6;margin-top:6px}
+.offer-screen>.calculation-note{text-align:center;margin-top:16px}
+@media(max-width:700px){
+  .sticky-cta span{color:var(--muted);font-weight:500}
+}
+.offer-screen .offer-price>.price-label{font-size:12px;font-weight:700;letter-spacing:1.4px;line-height:1.4;margin:0;color:#a9cdb6}
+.offer-screen .offer-price>.price-value{font-size:56px;font-weight:800;letter-spacing:-2.4px;line-height:1.05;margin:10px 0 4px;color:white}
+.offer-screen .offer-price>.price-day{font-size:14px;font-weight:500;letter-spacing:0;line-height:1.4;margin:0 0 20px;color:#c6dac8}
+.offer-screen .offer-price>.offer-trust{font-size:12px;font-weight:400;letter-spacing:0;line-height:1.5;margin:14px 0 0;color:#a9cdb6}
+.offer-screen .offer-price>.offer-endnote{font-size:11px;font-weight:400;letter-spacing:0;line-height:1.5;margin:6px 0 0;color:#a9cdb6}

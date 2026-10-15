@@ -8,6 +8,7 @@ import { sosView } from './views/sos.js';
 import { foodView } from './views/food.js';
 import { profileView } from './views/profile.js';
 import { supportView } from './views/support.js';
+import { canSee } from './features.js';
 
 // Nome da marca na interface; use Desato App nos metadados de descoberta.
 export const APP_NAME = 'Desato';
@@ -54,7 +55,7 @@ const appState = {
   storageMode: 'supabase',
   authReady: false,
   error: null,
-  ui: { foodTab: 'hoje', routinePeriod: 'manha', supportGuideId: null, supportFavoritesOnly: false }
+  ui: {}
 };
 
 let accountGeneration = 0;
@@ -99,7 +100,7 @@ function renderNav() {
       <div><strong>${APP_NAME}</strong></div>
     </div>
     <div class="nav-list">
-      ${navItems.map(([id, iconName, label]) => `
+      ${navItems.filter(([id]) => canSee(id, appState.admin)).map(([id, iconName, label]) => `
         <button class="nav-btn ${id === appState.route ? 'active' : ''} ${id === 'sos' ? 'sos' : ''}" data-route="${id}" ${id === appState.route ? 'aria-current="page"' : ''}>
           <span class="nav-icon">${icon(iconName)}</span>
           <span class="nav-label">${label}</span>
@@ -254,6 +255,8 @@ function render() {
     $('#retry')?.addEventListener('click', () => refresh(false));
     return;
   }
+  // Recurso ainda não lançado: só o administrador abre.
+  if (!canSee(appState.route, appState.admin)) appState.route = 'inicio';
   const view = routes[appState.route] || homeView;
   const ctx = {
     state: appState,
@@ -295,7 +298,7 @@ async function start() {
       accountGeneration += 1;
       appState.store = null; appState.summary = null; appState.error = null; appState.admin = false;
       appState.authUser = session?.user || null; setAccountId(session?.user?.id); appState.loading = Boolean(session);
-      appState.ui.supportGuideId = null; appState.ui.supportFavoritesOnly = false; appState.ui.journeyDay = null; appState.ui.situationId = null; appState.ui.situationDraft = null;
+      appState.ui.journeyDay = null; appState.ui.situationId = null; appState.ui.situationDraft = null;
       if (!session) { appState.route = 'inicio'; appState.authMode = 'login'; closeActiveModal?.(); $('#modal-root').innerHTML = ''; $('#toast-root').innerHTML = ''; $('#app').inert = false; render(); }
       else { if (returnToQuiz) { location.assign('/quiz?retomar=1'); return; } appState.authMode = 'login'; appState.route = 'inicio'; refresh(false); }
     });

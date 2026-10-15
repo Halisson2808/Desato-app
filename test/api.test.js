@@ -55,7 +55,6 @@ test('datas, status, números e booleanos inválidos são rejeitados', async () 
   }
   assert.equal((await request('/api/hydration', 'POST', { cups: 1.5 })).status, 400);
   assert.equal((await request('/api/money', 'PUT', { spendPerOuting: 'Infinity', outingsPerWeek: 2 })).status, 400);
-  assert.equal((await request('/api/routine/complete', 'POST', { taskId: 'agua', completed: 'false' })).status, 400);
   assert.equal((await request('/api/checkin', 'POST', null)).status, 400);
   const malformed = await fetch(base + '/api/profile', { method: 'PUT', body: '{' });
   assert.equal(malformed.status, 400);
@@ -71,29 +70,16 @@ test('registros e economia têm resultados consistentes', async () => {
   assert.equal(used.data.summary.month.used, 1);
 });
 test('mutações concorrentes preservam todos os itens e geram IDs únicos', async () => {
-  const results = await Promise.all(Array.from({ length: 20 }, (_, i) => request('/api/groceries', 'POST', { text: `Item ${i}` })));
+  const results = await Promise.all(Array.from({ length: 20 }, () => request('/api/sos-session', 'POST', { intensity: 3, action: 'cancelado etapa:1' })));
   assert.ok(results.every(result => result.status === 200));
-  const ids = results.map(result => result.data.item.id);
+  const ids = results.map(result => result.data.session.id);
   assert.equal(new Set(ids).size, 20);
   const { data } = await request('/api/state');
-  assert.ok(ids.every(id => data.store.groceries.some(item => item.id === id)));
+  assert.ok(ids.every(id => data.store.sos.sessions.some(item => item.id === id)));
 });
-test('rotina: criar, concluir, pausar, editar e excluir', async () => {
-  const created = await request('/api/routine/tasks', 'POST', { title: 'Teste', period: 'noite' });
-  const id = created.data.task.id;
-  assert.equal((await request('/api/routine/complete', 'POST', { taskId: id, completed: true })).data.summary.routine.done, 1);
-  assert.equal((await request(`/api/routine/tasks/${id}`, 'PATCH', { active: false })).data.summary.routine.done, 0);
-  await request(`/api/routine/tasks/${id}`, 'PATCH', { title: 'Editado' });
-  const removed = await request(`/api/routine/tasks/${id}`, 'DELETE');
-  assert.equal(removed.data.routine.tasks.some(task => task.id === id), false);
-  assert.equal(removed.data.routine.completions[localDate()][id], undefined);
-});
-test('hidratação, compras e SOS persistem', async () => {
+test('hidratação e SOS persistem; rotas antigas não existem mais', async () => {
   assert.equal((await request('/api/hydration', 'POST', { cups: 8 })).data.cups, 8);
-  const grocery = await request('/api/groceries', 'POST', { text: 'Maçã' });
-  const id = grocery.data.item.id;
-  assert.equal((await request(`/api/groceries/${id}`, 'PATCH', { checked: true })).data.item.checked, true);
-  await request(`/api/groceries/${id}`, 'DELETE');
+  for (const [route, method] of [['/api/groceries', 'POST'], ['/api/routine/tasks', 'POST'], ['/api/support/plan', 'PUT'], ['/api/quiz', 'GET']]) assert.equal((await request(route, method, method === 'GET' ? undefined : {})).status, 404, route);
   assert.equal((await request('/api/sos-session', 'POST', { action: 'completed-flow' })).data.session.action, 'completed-flow');
   const saved = JSON.parse(fs.readFileSync(path.join(directory, 'store.json')));
   assert.equal(saved.hydration[localDate()], 8);
@@ -103,6 +89,10 @@ test('recursos inexistentes, rotas removidas e origens externas são rejeitados'
   assert.equal((await fetch(base + '/missing.js')).status, 404);
   assert.equal((await request('/api/reset', 'POST', {})).status, 404);
   assert.equal((await fetch(base + '/api/checkin', { method: 'POST', headers: { Origin: 'https://external.example' }, body: '{}' })).status, 403);
+  // Mesmo host em https (produção atrás de proxy) é aceito; protocolo estranho não.
+  const host = new URL(base).host;
+  assert.notEqual((await fetch(base + '/api/checkin', { method: 'POST', headers: { Origin: `https://${host}`, 'Content-Type': 'application/json' }, body: '{}' })).status, 403);
+  assert.equal((await fetch(base + '/api/checkin', { method: 'POST', headers: { Origin: `ftp://${host}` }, body: '{}' })).status, 403);
 });
 test('limite de payload responde 413 sem derrubar o servidor', async () => {
   const response = await fetch(base + '/api/checkin', { method: 'POST', body: JSON.stringify({ note: 'á'.repeat(600000), status: 'clean' }) });
@@ -119,68 +109,12 @@ test('arquivo corrompido é preservado', async () => {
 });
 
 
-test('apoio salva plano validado e preserva os demais dados', async () => {
-  const before = (await request('/api/state')).data.store;
-  const plan = { situation: ' Quando me oferecerem bebida ', firstAction: ' Dizer minha decisão ', exit: 'Ir embora', help: 'Pedir companhia', unexpected: 'ignorar' };
-  const result = await request('/api/support/plan', 'PUT', plan);
-  assert.equal(result.status, 200);
-  assert.equal(result.data.support.plan.situation, 'Quando me oferecerem bebida');
-  assert.equal(result.data.support.plan.unexpected, undefined);
-  assert.ok(result.data.support.plan.updatedAt);
-  const after = (await request('/api/state')).data.store;
-  for (const key of ['profile', 'money', 'checkins', 'routine', 'hydration', 'groceries', 'sos']) assert.deepEqual(after[key], before[key]);
-  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(directory, 'store.json'))).support.plan, after.support.plan);
-  for (const body of [{ situation: '', firstAction: 'Fazer algo' }, { situation: 'Teste', firstAction: ' ' }, { situation: 'Teste', firstAction: 'x'.repeat(501) }, { situation: 'Teste', firstAction: 'Ação', help: null }, { situation: [], firstAction: 'Ação' }]) {
-    assert.equal((await request('/api/support/plan', 'PUT', body)).status, 400);
-  }
-  assert.deepEqual((await request('/api/support')).data.support.plan, after.support.plan);
-});
-
-test('favoritos de apoio são idempotentes e preservados em chamadas concorrentes', async () => {
-  const endpoint = '/api/support/favorites/pressao-amigos';
-  assert.equal((await request(endpoint, 'PATCH', { favorite: true })).status, 200);
-  await request(endpoint, 'PATCH', { favorite: true });
-  assert.deepEqual((await request('/api/support')).data.support.favoriteGuideIds, ['pressao-amigos']);
-  await Promise.all(['festa-encontro', 'meus-gatilhos', 'acompanhamento'].map(id => request(`/api/support/favorites/${id}`, 'PATCH', { favorite: true })));
-  assert.equal((await request('/api/support')).data.support.favoriteGuideIds.length, 4);
-  assert.equal((await request(endpoint, 'PATCH', { favorite: 'false' })).status, 400);
-  assert.equal((await request('/api/support/favorites/inexistente', 'PATCH', { favorite: true })).status, 404);
-  await request(endpoint, 'PATCH', { favorite: false });
-  assert.equal((await request('/api/support')).data.support.favoriteGuideIds.includes('pressao-amigos'), false);
-});
-
-test('arquivo antigo recebe Apoio sem perder histórico e com backup da versão anterior', async () => {
-  const file = path.join(directory, 'store.json');
-  const previous = JSON.parse(fs.readFileSync(file));
-  const legacy = { ...previous, version: 2 };
-  delete legacy.support;
-  fs.writeFileSync(file, JSON.stringify(legacy));
-  const { data, status } = await request('/api/state');
-  assert.equal(status, 200);
-  assert.deepEqual(data.store.support, { plan: null, favoriteGuideIds: [] });
-  assert.equal(data.store.version, 3);
-  for (const key of Object.keys(legacy).filter(key => key !== 'version')) assert.deepEqual(data.store[key], legacy[key]);
-  assert.deepEqual(JSON.parse(fs.readFileSync(file + '.bak')), legacy);
-  assert.deepEqual(JSON.parse(fs.readFileSync(file)).support, data.store.support);
-});
-
-test('dados de Apoio corrompidos não são redefinidos silenciosamente', async () => {
-  const file = path.join(directory, 'store.json');
-  const previous = fs.readFileSync(file);
-  const invalid = JSON.parse(previous);
-  invalid.support = { plan: null, favoriteGuideIds: 'incorreto' };
-  fs.writeFileSync(file, JSON.stringify(invalid));
-  assert.equal((await request('/api/state')).status, 500);
-  assert.deepEqual(JSON.parse(fs.readFileSync(file)), invalid);
-  fs.writeFileSync(file, previous);
-});
-
-test('logo e módulos de Apoio são servidos com tipos aceitos pelo navegador', async () => {
+test('logo e módulos das telas são servidos com tipos aceitos pelo navegador', async () => {
   const logo = await fetch(base + '/icon.svg');
   assert.equal(logo.status, 200);
   assert.ok(logo.headers.get('content-type').startsWith('image/svg+xml'));
   assert.ok((await logo.text()).includes('<svg'));
-  for (const asset of ['/js/app.js', '/js/views/support.js', '/js/content/support-guides.js']) {
+  for (const asset of ['/js/app.js', '/js/views/support.js', '/js/content/journey.js']) {
     const response = await fetch(base + asset);
     assert.equal(response.status, 200);
     assert.ok(response.headers.get('content-type').startsWith('application/javascript'), asset);
@@ -192,18 +126,6 @@ test('site, app e cinco rotas de quiz públicos servem as páginas corretas', as
   const pages = [['/', '/js/site.js'], ['/app','/js/app.js'], ...['consumo','vontade','gatilhos','impacto','retomada'].map(id => ['/quiz/'+id,'/js/quiz.js']), ['/quiz','/js/quiz.js']];
   for (const [route,script] of pages) { const response = await fetch(base+route); assert.equal(response.status,200); assert.match(response.headers.get('content-type'),/text\/html/); assert.ok((await response.text()).includes(script)); }
 });
-test('quiz local valida respostas e preserva histórico e dinheiro ao salvar', async () => {
-  const model = await import('data:text/javascript;base64,' + Buffer.from(fs.readFileSync(path.join(__dirname,'../public/js/quiz-model.js'),'utf8')).toString('base64'));
-  const quiz = model.QUIZZES[0];
-  const answers = Object.fromEntries(quiz.questions.map(q => [q.id,q.options ? q.options[0].value : q.id === 'spend' ? 80 : 2]));
-  const before = (await request('/api/state')).data.store;
-  assert.equal((await request('/api/quiz','POST',{quizId:quiz.id,answers:{}})).status,400);
-  assert.equal((await request('/api/quiz','POST',{quizId:quiz.id,answers})).status,200);
-  assert.equal((await request('/api/quiz')).data.quizzes[0].answers.spend,80);
-  const after = (await request('/api/state')).data.store;
-  assert.deepEqual(after.checkins,before.checkins); assert.deepEqual(after.money,before.money);
-});
-
 test('funil local registra visitantes separados, rejeita token errado e não altera contas',async()=>{
   const body={id:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',token:'c'.repeat(64),quizId:'consumo',answers:{goal:'reduce'},completed:false,revision:1};
   const before=(await request('/api/state')).data.store;

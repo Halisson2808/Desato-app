@@ -31,7 +31,8 @@ before(async () => {
     const owner = token === 'Bearer valid-alice' ? 'alice' : token === 'Bearer valid-bob' ? 'bob' : token === 'Bearer valid-admin' ? 'admin' : token === 'Bearer valid-unconfirmed' ? 'unconfirmed' : null;
     if (!owner) return answer(res, 401, { error: 'Invalid token' });
     if (url.pathname === '/auth/v1/user') return answer(res, 200, ['admin', 'unconfirmed'].includes(owner) ? { id: owner, email: 'HalissonSantos13@gmail.com', email_confirmed_at: owner === 'admin' ? '2026-10-06T00:00:00Z' : null } : { id: owner, email: `${owner}@example.test` });
-    if (url.pathname === '/rest/v1/rpc/desato_has_access') return answer(res, 200, !records.get('unpaid')?.includes(owner));
+    if (url.pathname === '/rest/v1/rpc/desato_is_admin') return answer(res, 200, owner === 'admin');
+    if (url.pathname === '/rest/v1/rpc/desato_has_access') return answer(res, 200, owner === 'admin' || !records.get('unpaid')?.includes(owner));
     if (url.searchParams.get('user_id') !== `eq.${owner}`) return answer(res, 403, {});
     const table = url.pathname.split('desato_')[1];
     const rows = records.get(table) || [];
@@ -88,18 +89,6 @@ test('contas salvam no Supabase e não recebem estado de outra conta', async () 
   assert.equal((await request('/api/state','GET',undefined,'valid-alice')).data.store.checkins['2026-10-06'].status, 'clean');
 });
 
-test('quiz exige conta, valida respostas e não permite acesso ao resultado de outro usuário', async () => {
-  const model = await import('data:text/javascript;base64,' + Buffer.from(fs.readFileSync(path.join(root,'public/js/quiz-model.js'),'utf8')).toString('base64'));
-  const quiz = model.QUIZZES[0];
-  const answers = Object.fromEntries(quiz.questions.map(q => [q.id,q.options ? q.options[0].value : 0]));
-  assert.equal((await request('/api/quiz')).status,401);
-  assert.equal((await request('/api/quiz','POST',{quizId:quiz.id,answers})).status,401);
-  assert.equal((await request('/api/quiz','POST',{quizId:quiz.id,answers:{}},'valid-alice')).status,400);
-  assert.equal((await request('/api/quiz','POST',{quizId:quiz.id,answers,user_id:'bob'},'valid-alice')).status,200);
-  assert.equal((await request('/api/quiz','GET',undefined,'valid-alice')).data.quizzes.length,1);
-  assert.equal((await request('/api/quiz','GET',undefined,'valid-bob')).data.quizzes.length,0);
-});
-
 test('interface, SDK e login são servidos localmente como JavaScript', async () => {
   for (const asset of ['/vendor/supabase.js','/js/auth.js','/js/views/auth.js']) {
     const response = await fetch(base+asset); assert.equal(response.status, 200);
@@ -130,10 +119,13 @@ test('conta sem assinatura ativa recebe 402 com link de pagamento e não lê dad
   } finally { records.delete('unpaid'); }
 });
 
-test('administrador com e-mail confirmado entra sem assinatura; sem confirmação, não', async () => {
+test('papel vem do banco: administrador entra sem assinatura e recebe admin; usuário comum não', async () => {
   records.set('unpaid', ['admin', 'unconfirmed']);
   try {
-    assert.equal((await request('/api/state', 'GET', undefined, 'valid-admin')).status, 200);
+    const admin = await request('/api/state', 'GET', undefined, 'valid-admin');
+    assert.equal(admin.status, 200);
+    assert.equal(admin.data.admin, true);
     assert.equal((await request('/api/state', 'GET', undefined, 'valid-unconfirmed')).status, 402);
+    assert.equal((await request('/api/state', 'GET', undefined, 'valid-alice')).data.admin, false);
   } finally { records.delete('unpaid'); }
 });
