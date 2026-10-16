@@ -12,7 +12,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
  * CAKTO_CLIENT_SECRET. SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY já existem.
  */
 
+// Assinatura (futuro Premium/upsell) e app básico de compra única.
 const PRODUCT_ID = Deno.env.get("DESATO_CAKTO_PRODUCT_ID") ?? "b3263e25-cc53-431a-a090-be0ccaf8d0c9";
+const BASE_PRODUCT_ID = Deno.env.get("DESATO_CAKTO_BASE_PRODUCT_ID") ?? "";
+const isBase = (id: string | undefined) => !!BASE_PRODUCT_ID && id === BASE_PRODUCT_ID;
 const API = "https://api.cakto.com.br/public_api";
 const RECURRENCE_DAYS = 30;
 
@@ -81,7 +84,7 @@ Deno.serve(async (req) => {
   if (!handled.includes(event)) return reply(200, { ok: true, skipped: event });
 
   const productId = idOf(data.product);
-  if (productId && productId !== PRODUCT_ID) return reply(200, { ok: true, skipped: "other_product" });
+  if (productId && productId !== PRODUCT_ID && !isBase(productId)) return reply(200, { ok: true, skipped: "other_product" });
 
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   const orderId = idOf(data.id) ?? idOf(data.order);
@@ -115,9 +118,34 @@ Deno.serve(async (req) => {
 
     if (!orderId) throw new Error("evento sem id do pedido");
     const order = await cakto<Order>(`/orders/${orderId}/`);
-    if (order.product?.id !== PRODUCT_ID) return reply(200, { ok: true, skipped: "other_product" });
+    const base = isBase(order.product?.id);
+    if (order.product?.id !== PRODUCT_ID && !base) return reply(200, { ok: true, skipped: "other_product" });
     const email = emailOf(order.customer?.email);
     if (!email) throw new Error("pedido sem e-mail");
+
+    // App básico: pagamento único libera para sempre; reembolso e chargeback cortam.
+    if (base) {
+      if (event === "purchase_approved") {
+        if (order.status !== "paid") { log("order not paid", { orderId, status: order.status }); return reply(200, { ok: true, ignored: "not_paid" }); }
+        const { error } = await supabase.from("desato_purchases").upsert({ email, status: "paid", cakto_order_id: order.id }, { onConflict: "email" });
+        if (error) throw error;
+        log("purchase granted", { orderId });
+        return reply(200, { ok: true });
+      }
+      if (event === "refund" || event === "chargeback") {
+        const final = event === "refund" ? "refunded" : "chargedback";
+        if (order.status !== final) {
+          log("refund/chargeback not final", { orderId, status: order.status });
+          await supabase.from("desato_cakto_events").delete().eq("event_key", eventKey);
+          return reply(200, { ok: true, ignored: "not_final" });
+        }
+        const { error } = await supabase.from("desato_purchases").update({ status: event === "refund" ? "refunded" : "chargeback" }).eq("email", email);
+        if (error) throw error;
+        log("purchase revoked", { orderId, event });
+        return reply(200, { ok: true });
+      }
+      return reply(200, { ok: true, skipped: event });
+    }
 
     if (event === "purchase_approved" || event === "subscription_renewed") {
       if (order.status !== "paid") {

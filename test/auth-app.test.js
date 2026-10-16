@@ -40,19 +40,14 @@ async function boot(session = null, recovery = false, search = '') {
 
 }
 
-test('sem sessão abre login padrão e mantém senha fora do armazenamento', async () => {
+test('sem sessão abre a entrada só com e-mail, sem senha nem cadastro', async () => {
   const app = await boot();
   assert.ok(app.document.querySelector('#app').classList.contains('auth-shell'));
-  assert.ok(app.document.querySelector('#auth-form'));
-  assert.equal(app.document.querySelector('#auth-password').getAttribute('autocomplete'), 'current-password');
+  assert.ok(app.document.querySelector('#auth-email'));
+  assert.equal(app.document.querySelector('input[type="password"]'), null);
+  assert.equal(app.document.querySelector('[data-auth-mode]'), null);
   assert.equal(app.document.querySelector('#bottom-nav').textContent, '');
-  assert.equal(app.entries.has('password'), false);
-  app.click('[data-toggle-password]');
-  assert.equal(app.document.querySelector('#auth-password').type, 'text');
-  app.click('[data-auth-mode="signup"]');
-  assert.ok(app.document.querySelector('#auth-name'));
-  assert.equal(app.document.querySelector('#auth-password').getAttribute('minlength'), '8');
-  assert.equal(app.document.querySelector('#auth-confirm').getAttribute('autocomplete'), 'new-password');
+  assert.doesNotMatch(app.document.querySelector('#view').textContent, /senha|Criar conta|Precisa de apoio|Abrir SOS/i);
 });
 
 test('login solicitado pelo quiz volta ao resultado após restaurar ou iniciar sessão', async () => {
@@ -63,19 +58,6 @@ test('login solicitado pelo quiz volta ao resultado após restaurar ou iniciar s
   assert.equal(signedOut.redirects.length,0);
   signedOut.setSession(session); signedOut.listeners.forEach(listener => listener('SIGNED_IN',session));
   await signedOut.flush(); assert.deepEqual(signedOut.redirects,['/quiz?retomar=1']);
-});
-
-test('telas de acesso mostram somente conta e senha, sem reenvio ou atalhos de apoio', async () => {
-  const app = await boot();
-  for (const mode of ['login','signup','forgot']) {
-    if (mode !== 'login') app.click(`[data-auth-mode="${mode}"]`);
-    assert.ok(app.document.querySelector('#auth-form'));
-    assert.equal(app.document.querySelector('#auth-resend'),null);
-    assert.equal(app.document.querySelector('[data-auth-public]'),null);
-    assert.equal(app.document.querySelector('.auth-help'),null);
-    assert.doesNotMatch(app.document.querySelector('#view').textContent,/Precisa de apoio|Abrir SOS|Ler orientações|Reenviar confirmação/);
-    if (mode !== 'login') app.click('[data-auth-mode="login"]');
-  }
 });
 
 test('sessão restaurada abre painel; sair e trocar conta não reutiliza dados', async () => {
@@ -95,28 +77,18 @@ test('sessão restaurada abre painel; sair e trocar conta não reutiliza dados',
   assert.equal(app.document.querySelector('#view').textContent.includes('Alice'), false);
 });
 
-test('sessão de recuperação abre formulário de nova senha', async () => {
-  const app = await boot({ user: { id: 'alice' }, access_token: 'token-alice' }, true);
-  assert.ok(app.document.querySelector('#view').textContent.includes('Escolha uma nova senha'));
-  assert.equal(app.document.querySelector('#auth-password').getAttribute('autocomplete'), 'new-password');
-  assert.equal(app.document.querySelector('#auth-email'), null);
-});
-
-test('formulário envia credenciais ao Auth e lembra apenas o e-mail', async () => {
+test('formulário envia só o e-mail, valida o formato e mostra o erro do servidor', async () => {
   const app = await boot();
-  const form = app.document.querySelector('#auth-form');
   const email = app.document.querySelector('#auth-email');
-  const password = app.document.querySelector('#auth-password');
-  email.value = 'alice@example.test'; password.value = 'senha-de-teste-123';
-  app.document.querySelector('#auth-remember').checked = true;
-  Object.defineProperty(form, 'elements', { value: { namedItem: name => name === 'email' ? email : name === 'password' ? password : null } });
-  form.reportValidity = () => true;
-  let received;
-  app.context.__auth.signIn = async (mail, secret) => { received = { mail, secret }; return { data: { session: {} }, error: null }; };
-  form.dispatchEvent(new app.document.defaultView.Event('submit', { cancelable: true }));
-  await app.flush(); await app.flush();
-  assert.deepEqual(received, { mail: 'alice@example.test', secret: 'senha-de-teste-123' });
+  const sent = [];
+  app.context.__auth.emailLogin = async mail => { sent.push(mail); if (mail === 'sem-compra@example.test') throw new Error('Não encontramos uma compra com este e-mail.'); };
+  const submit = async value => { email.value = value; app.document.querySelector('#auth-form').dispatchEvent(new app.document.defaultView.Event('submit', { cancelable: true })); await app.flush(); await app.flush(); };
+  await submit('nao-e-email');
+  assert.equal(sent.length, 0);
+  assert.match(app.document.querySelector('#auth-feedback').textContent, /e-mail válido/);
+  await submit('sem-compra@example.test');
+  assert.match(app.document.querySelector('#auth-feedback').textContent, /Não encontramos uma compra/);
+  await submit('  Alice@Example.test ');
+  assert.deepEqual(sent, ['sem-compra@example.test', 'alice@example.test']);
   assert.equal(app.entries.get('desato-remember-email'), 'alice@example.test');
-  assert.equal([...app.entries.values()].some(value => value.includes('senha-de-teste-123')), false);
-  assert.equal(password.value, '');
 });

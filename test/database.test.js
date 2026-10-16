@@ -33,13 +33,14 @@ before(async () => {
   await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261011000200_subscriptions.sql'),'utf8'));
   await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261015000100_user_roles.sql'),'utf8'));
   await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261015000200_drop_legacy_tables.sql'),'utf8'));
+  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261015000300_one_time_purchase.sql'),'utf8'));
   await db.query('insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3), ($4, $5, $6)', [alice, 'alice@example.test', { name: 'Alice' }, bob, 'bob@example.test', { name: 'Bob' }]);
 });
 after(async () => { if (db) await db.close(); });
 
-test('11 tabelas possuem RLS: 7 por conta, papéis só leitura, assinaturas e funil sem leitura pública', async () => {
+test('13 tabelas possuem RLS: 7 por conta, papéis só leitura, compras, assinaturas e funil sem leitura pública', async () => {
   const { rows } = await db.query("select c.relname, c.relrowsecurity, c.relforcerowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname like 'desato_%' and c.relkind = 'r'");
-  assert.equal(rows.length, 11);
+  assert.equal(rows.length, 13);
   assert.ok(!rows.some(row => /routine|groceries|recipe|support|quiz_answers/.test(row.relname)));
   assert.ok(rows.every(row => row.relrowsecurity && (row.relname === 'desato_funnel_responses' || row.relforcerowsecurity)));
   const policies = await db.query("select tablename, qual, with_check from pg_policies where schemaname = 'public' and policyname = 'desato_owner'");
@@ -174,4 +175,22 @@ test('papéis: novo cadastro vira usuário, administrador acessa sem assinatura 
     assert.equal((await db.query('select * from public.desato_user_roles')).rows.length, 1);
     await assert.rejects(db.query("update public.desato_user_roles set role = 'admin' where user_id = $1", [carol]));
   });
+});
+
+test('compra única libera o e-mail; reembolso corta; app não consegue consultar e-mails de terceiros', async () => {
+  const dave = '55555555-5555-4555-8555-555555555555';
+  await db.query('insert into auth.users (id, email) values ($1, $2) on conflict do nothing', [dave, 'dave@example.test']);
+  const check = async email => (await db.query('select public.desato_email_has_access($1) as ok', [email])).rows[0].ok;
+  assert.equal(await check('dave@example.test'), false);
+  await db.query("insert into public.desato_purchases (email, status) values ('dave@example.test', 'paid')");
+  assert.equal(await check('  DAVE@example.test '), true);
+  await asUser(dave, async () => {
+    assert.equal((await db.query('select public.desato_has_access() as ok')).rows[0].ok, true);
+    await assert.rejects(db.query("select public.desato_email_has_access('dave@example.test')"), error => error.code === '42501');
+    await assert.rejects(db.query('select * from public.desato_purchases'), error => error.code === '42501');
+    await assert.rejects(db.query('select * from public.desato_login_attempts'), error => error.code === '42501');
+  });
+  await db.query("update public.desato_purchases set status = 'refunded' where email = 'dave@example.test'");
+  assert.equal(await check('dave@example.test'), false);
+  await asUser(dave, async () => assert.equal((await db.query('select public.desato_has_access() as ok')).rows[0].ok, false));
 });

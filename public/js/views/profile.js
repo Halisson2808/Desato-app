@@ -30,7 +30,7 @@ export const profileView = {
         </div>
       </section>
 
-      ${state.storageMode === 'supabase' ? `<section class="section profile-settings-section"><div class="section-head"><div><h3>Acesso à conta</h3><p>Gerencie sua senha e sua sessão.</p></div></div><div class="settings-list clean-settings"><button class="setting-row" id="profile-password"><div class="setting-icon">✦</div><div class="setting-copy"><strong>Redefinir senha</strong><span>Receber um link no meu e-mail</span></div><span class="chev">›</span></button><button class="setting-row" id="profile-signout"><div class="setting-icon">↪</div><div class="setting-copy"><strong>Sair da conta</strong><span>Encerrar o acesso neste navegador</span></div><span class="chev">›</span></button></div></section>` : ''}
+      ${state.storageMode === 'supabase' ? `<section class="section profile-settings-section"><div class="section-head"><div><h3>Acesso à conta</h3><p>Você entra só com o seu e-mail.</p></div></div><div class="settings-list clean-settings"><button class="setting-row" id="profile-signout"><div class="setting-icon">↪</div><div class="setting-copy"><strong>Sair da conta</strong><span>Encerrar o acesso neste navegador</span></div><span class="chev">›</span></button></div></section>` : ''}
     `;
   },
 
@@ -41,12 +41,6 @@ export const profileView = {
     $('#profile-signout')?.addEventListener('click', async () => {
       const button = $('#profile-signout'); button.disabled = true;
       try { await ctx.signOut(); } catch (error) { ctx.toast(authMessage(error)); button.disabled = false; }
-    });
-    $('#profile-password')?.addEventListener('click', async () => {
-      const button = $('#profile-password'); button.disabled = true;
-      try { const { error } = await ctx.auth.forgot(p.email); if (error) throw error; ctx.toast('Confira seu e-mail para escolher uma nova senha.'); }
-      catch (error) { ctx.toast(authMessage(error)); }
-      finally { button.disabled = false; }
     });
     $('#profile-edit')?.addEventListener('click', () => {
       openModal({

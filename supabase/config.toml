@@ -416,3 +416,6 @@ enabled = true
 
 [functions.cakto-webhook]
 verify_jwt = false
+
+[functions.email-login]
+verify_jwt = false

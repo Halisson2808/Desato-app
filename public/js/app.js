@@ -49,7 +49,7 @@ const appState = {
   store: null,
   summary: null,
   loading: true,
-  authMode: new URLSearchParams(location.search).has('reset') ? 'reset' : 'login',
+  authMode: 'login',
   authFeedback: '',
   authUser: null,
   storageMode: 'supabase',
@@ -225,7 +225,7 @@ export async function mutate(action, successMessage = '') {
 }
 
 function render() {
-  const loginVisible = appState.storageMode === 'supabase' && (!appState.authReady || appState.authMode === 'reset' || !appState.authUser);
+  const loginVisible = appState.storageMode === 'supabase' && (!appState.authReady || !appState.authUser);
   $('#app').classList.toggle('auth-shell', loginVisible);
   if (loginVisible) {
     $('#app-header').innerHTML = ''; $('#bottom-nav').innerHTML = '';
@@ -234,10 +234,7 @@ function render() {
       $('#auth-retry')?.addEventListener('click', () => location.reload());
       return;
     }
-    const ctx = { state: appState, auth, email: localStorage.getItem('desato-remember-email') || '', showAuth, navigate: setRoute, passwordChanged: async () => {
-      appState.authMode = 'login'; sessionStorage.removeItem('desato-password-recovery'); history.replaceState(null, '', '/app#inicio');
-      appState.route = 'inicio'; await refresh(false); toast('Senha atualizada.');
-    } };
+    const ctx = { state: appState, auth, email: localStorage.getItem('desato-remember-email') || '', showAuth, navigate: setRoute };
     $('#view').innerHTML = authView.html(ctx); authView.bind(ctx); return;
   }
   $('#app').classList.toggle('sos-mode', appState.route === 'sos');
@@ -291,7 +288,6 @@ async function start() {
   try {
     const result = await initializeAuth((event, session) => {
       if (!appState.authReady || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
-      if (event === 'PASSWORD_RECOVERY') { appState.authMode = 'reset'; render(); return; }
       const nextId = session?.user?.id;
       if (nextId === appState.authUser?.id && event === 'USER_UPDATED') { appState.authUser = session.user; refresh(false); return; }
       if (nextId === appState.authUser?.id && event !== 'SIGNED_OUT') return;
@@ -303,10 +299,8 @@ async function start() {
       else { if (returnToQuiz) { location.assign('/quiz?retomar=1'); return; } appState.authMode = 'login'; appState.route = 'inicio'; refresh(false); }
     });
     appState.storageMode = result.config.mode; appState.authUser = result.session?.user || null; setAccountId(result.session?.user?.id); appState.authReady = true;
-    if (returnToQuiz && result.session && !result.recovery) { location.assign('/quiz?retomar=1'); return; }
-    if (result.recovery) appState.authMode = 'reset';
-    if (appState.authMode === 'reset' && !result.session) showAuth('login', 'O link de recuperação é inválido ou expirou. Solicite outro link.');
-    else if (result.config.mode === 'json' || result.session) await refresh(false);
+    if (returnToQuiz && result.session) { location.assign('/quiz?retomar=1'); return; }
+    if (result.config.mode === 'json' || result.session) await refresh(false);
     else { appState.loading = false; render(); }
   } catch (error) { appState.error = error.message; render(); }
 }
