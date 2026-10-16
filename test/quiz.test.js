@@ -109,8 +109,9 @@ test('seleção única avança, checklist exige resposta, sem voltar nem contage
   app.event('#see-offer');
   assert.match(app.document.querySelector('.offer-hero h1').textContent,/recuperar o controle/);
   assert.equal(app.document.querySelectorAll('.benefit-item').length,5);
-  assert.match(app.document.querySelector('.net').textContent,/403,43/);
-  app.event('[data-reduction="1"]');assert.match(app.document.querySelector('.net').textContent,/836,77/);
+  assert.match(app.document.querySelector('.net').textContent,/433,33/);
+  app.event('[data-reduction="1"]');assert.match(app.document.querySelector('.net').textContent,/866,67/);
+  assert.match(app.document.querySelector('.payback').textContent,/se paga em 2 dias/);
   assert.deepEqual(app.completions,['desato:quiz-complete']);
   await app.flush();await app.flush();assert.equal(app.requests.filter(item=>item.url==='/api/funnel').length,0,'registro desativado não envia respostas');
 });
@@ -120,10 +121,10 @@ test('oferta com gasto zero mostra custo adicional em vez de inventar vantagem f
   app.event('[data-multiple="control"]');app.event('#next-multiple');app.event('#bridge-next');app.event('#custom-money');
   app.document.querySelector('#numeric-answer').value='0';app.event('#number-form','submit');app.event('[data-frequency="1"]');
   app.event('#see-offer');assert.match(app.document.querySelector('.net').textContent,/29,90/);
-  assert.match(app.document.querySelector('.net').textContent,/custo adicional/);
-  assert.match(app.document.querySelector('.comparison-conclusion').textContent,/não cobriria/);
+  assert.match(app.document.querySelector('.net').textContent,/sem mensalidade/);
+  assert.match(app.document.querySelector('.comparison-conclusion').textContent,/não há economia/);
   const links=[...app.document.querySelectorAll('a')];
-  assert.deepEqual(links.map(link=>link.getAttribute('href')),['https://pay.cakto.com.br/6fnsj7n']);
+  assert.deepEqual(links.map(link=>link.getAttribute('href')),['https://pay.cakto.com.br/wm4tnum']);
 });
 test('comparação mostra hoje, total incluindo assinatura e economia com decomposição clara',async()=>{
   const app=await boot();app.event('#start');
@@ -131,11 +132,12 @@ test('comparação mostra hoje, total incluindo assinatura e economia com decomp
   app.event('[data-multiple="money"]');app.event('#next-multiple');app.event('#bridge-next');app.event('#custom-money');
   app.document.querySelector('#numeric-answer').value='150';app.event('#number-form','submit');app.event('[data-frequency="1"]');app.event('#see-offer');
   assert.match(app.document.querySelector('.compare-today strong').textContent,/650,00/);
-  assert.match(app.document.querySelector('.compare-future strong').textContent,/354,90/);
+  assert.match(app.document.querySelector('.compare-future strong').textContent,/325,00/);
   assert.match(app.document.querySelector('.compare-breakdown').textContent,/325,00/);
-  assert.match(app.document.querySelector('.compare-breakdown').textContent,/29,90/);
-  assert.match(app.document.querySelector('.compare-saving .net').textContent,/295,10/);
-  assert.match(app.document.querySelector('.offer-price').textContent,/ASSINATURA MENSAL/);
+  assert.match(app.document.querySelector('.compare-breakdown').textContent,/pago uma vez/);
+  assert.match(app.document.querySelector('.compare-saving .net').textContent,/325,00/);
+  assert.match(app.document.querySelector('.offer-price').textContent,/PAGAMENTO ÚNICO/);
+  assert.doesNotMatch(app.document.querySelector('.offer-price').textContent,/mês/);
   assert.equal(app.document.querySelector('.price-status'),null);
   assert.match(app.document.querySelector('[data-reduction="0.5"]').textContent,/Metade/);
 });
@@ -156,7 +158,7 @@ test('transição conta no progresso, sem detalhar perguntas; oferta mostra bene
   assert.doesNotMatch(bridge.textContent,/Obrigado|gasto|dinheiro|custa|por mês/);
   assert.ok(Number(app.document.querySelector('[role="progressbar"]').getAttribute('aria-valuenow'))>Number(before));
   app.event('#bridge-next');app.event('[data-money="100"]');app.event('[data-frequency="2"]');
-  assert.match(app.document.querySelector('.impact-equivalent').textContent,/28 anos/);
+  assert.match(app.document.querySelector('.impact-equivalent').textContent,/28 vezes/);
   app.event('#see-offer');
   const html=app.document.querySelector('.offer-screen').innerHTML;
   assert.ok(html.indexOf('benefit-list')<html.indexOf('offer-price'));

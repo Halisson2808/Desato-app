@@ -112,8 +112,8 @@ function countUp(element, target) {
 function resultScreen() {
   const projection=financialProjection(answers.spend,answers.frequency,0,0);
   const spends=projection.monthly>0;
-  const yearsOfDesato=projection.annual/(OFFER.monthlyPrice*12);
-  main.innerHTML=`<section class="result-screen impact-screen">${progress()}<h1>${spends?'Essas saídas têm<br>um custo que <em>se acumula.</em>':'Sua mudança começa<br>pelo que importa <em>para você.</em>'}</h1><p class="question-subtitle">${spends?'Veja o que o seu gasto habitual representa ao longo do tempo.':'Você não informou gastos com essas saídas. Seu objetivo pessoal continua sendo o ponto de partida.'}</p>${spends?`<div class="financial-summary"><span>EM UM ANO, NESSE RITMO</span><div class="annual-impact annual-hero"><strong id="annual-value">${currency(projection.annual)}</strong></div><div class="money-stats"><div><span>Por mês</span><p class="big-money">${currency(projection.monthly)}<small>/mês</small></p></div><div><span>Por dia, em média</span><strong>${currency(projection.daily)}</strong></div></div></div>${yearsOfDesato>=1?`<div class="impact-equivalent"><span aria-hidden="true">≈</span><p>Esse valor pagaria o Desato por <strong>${Math.floor(yearsOfDesato)} ${Math.floor(yearsOfDesato)===1?'ano':'anos'}</strong>.</p></div>`:''}`:`<div class="financial-summary"><span>GASTO MENSAL MÉDIO ESTIMADO</span><p class="big-money">${currency(0)}<small>/mês</small></p><div class="annual-impact"><span>Em um ano</span><strong>${currency(0)}</strong></div></div>`}<p class="calculation-note impact-note">Com base em ${currency(answers.spend)} por saída e ${String(answers.frequency).replace('.',',')} ${answers.frequency===1?'saída':'saídas'} por semana. Estimativa de 52 semanas por ano; inclui apenas bebidas nessas saídas.</p><div class="impact-bridge"><h2>O dinheiro é uma parte.<br>O seu objetivo é maior.</h2><p>Você quer <strong>${goalLabel().toLowerCase()}</strong>. Agora, veja como o Desato pode fazer parte dos seus próximos passos.</p></div><button class="primary-action" id="see-offer">Conhecer meu próximo passo <span aria-hidden="true">→</span></button><p id="save-status" class="save-status" role="status" hidden></p><p id="quiz-error" class="quiz-error" role="alert" tabindex="-1"></p></section>`;
+  const timesDesato=Math.floor(projection.monthly/OFFER.price);
+  main.innerHTML=`<section class="result-screen impact-screen">${progress()}<h1>${spends?'Essas saídas têm<br>um custo que <em>se acumula.</em>':'Sua mudança começa<br>pelo que importa <em>para você.</em>'}</h1><p class="question-subtitle">${spends?'Veja o que o seu gasto habitual representa ao longo do tempo.':'Você não informou gastos com essas saídas. Seu objetivo pessoal continua sendo o ponto de partida.'}</p>${spends?`<div class="financial-summary"><span>EM UM ANO, NESSE RITMO</span><div class="annual-impact annual-hero"><strong id="annual-value">${currency(projection.annual)}</strong></div><div class="money-stats"><div><span>Por mês</span><p class="big-money">${currency(projection.monthly)}<small>/mês</small></p></div><div><span>Por dia, em média</span><strong>${currency(projection.daily)}</strong></div></div></div>${timesDesato>=1?`<div class="impact-equivalent"><span aria-hidden="true">≈</span><p>Só um mês dessas saídas pagaria o Desato <strong>${timesDesato} ${timesDesato===1?'vez':'vezes'}</strong>.</p></div>`:''}`:`<div class="financial-summary"><span>GASTO MENSAL MÉDIO ESTIMADO</span><p class="big-money">${currency(0)}<small>/mês</small></p><div class="annual-impact"><span>Em um ano</span><strong>${currency(0)}</strong></div></div>`}<p class="calculation-note impact-note">Com base em ${currency(answers.spend)} por saída e ${String(answers.frequency).replace('.',',')} ${answers.frequency===1?'saída':'saídas'} por semana. Estimativa de 52 semanas por ano; inclui apenas bebidas nessas saídas.</p><div class="impact-bridge"><h2>O dinheiro é uma parte.<br>O seu objetivo é maior.</h2><p>Você quer <strong>${goalLabel().toLowerCase()}</strong>. Agora, veja como o Desato pode fazer parte dos seus próximos passos.</p></div><button class="primary-action" id="see-offer">Conhecer meu próximo passo <span aria-hidden="true">→</span></button><p id="save-status" class="save-status" role="status" hidden></p><p id="quiz-error" class="quiz-error" role="alert" tabindex="-1"></p></section>`;
   document.querySelector('#see-offer').addEventListener('click',()=>{showingOffer=true;render();focus();});
   countUp(document.querySelector('#annual-value'),projection.annual);
   updateSaveStatus();
@@ -128,9 +128,10 @@ const BENEFITS=[
   [svg('<path d="M12 20s-8-4.8-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.2-8 10-8 10Z"/>'),'Corpo e saúde','Veja o que melhora no seu corpo a cada dia sem beber.']
 ];
 function offerScreen() {
-  const projection=financialProjection(answers.spend,answers.frequency,reduction,OFFER.monthlyPrice);
+  const projection=financialProjection(answers.spend,answers.frequency,reduction,0);
+  const saved=projection.monthly*reduction;
+  const paybackDays=saved>0?Math.max(1,Math.ceil(OFFER.price/(saved/30))):null;
   const spends=projection.monthly>0;
-  const perDay=OFFER.monthlyPrice/30;
   const checkout=OFFER.checkoutUrl?`<a class="primary-action checkout-action" href="${escape(OFFER.checkoutUrl)}" rel="noopener">Quero começar agora <span aria-hidden="true">→</span></a>`:'<button class="primary-action offer-unavailable" disabled>Assinatura em preparação</button>';
   main.innerHTML=`<section class="offer-screen">
     <header class="offer-hero"><h1>Seu plano para <em>${goalLabel().toLowerCase()}</em></h1><p>Tudo o que você precisa, no seu celular, para os momentos em que a vontade aparece.</p></header>
@@ -141,30 +142,29 @@ function offerScreen() {
       <h2>Vale a pena para o seu bolso?</h2>
       <div class="value-compare">
         <div><span>Uma única saída sua</span><strong>${currency(answers.spend)}</strong></div>
-        <div class="value-desato"><span>Um mês inteiro de Desato</span><strong>${currency(OFFER.monthlyPrice)}</strong></div>
+        <div class="value-desato"><span>O Desato, para sempre</span><strong>${currency(OFFER.price)}</strong></div>
       </div>
-      <p class="value-note">${answers.spend>OFFER.monthlyPrice?'O mês inteiro custa menos do que uma noite de bebida.':'Um mês de apoio pelo preço de uma saída.'}</p>
+      <p class="value-note">${answers.spend>OFFER.price?'Você paga uma vez só, menos do que uma noite de bebida.':'Você paga uma vez só, o preço de uma saída.'}</p>
       <div class="scenario-panel offer-comparison"><p class="comparison-intro">Se você reduzir essas saídas:</p><div class="scenario-options">${[[.25,'25% menos'],[.5,'Metade'],[1,'Nenhuma']].map(([value,label])=>`<button data-reduction="${value}" aria-pressed="${reduction===value}">${label}</button>`).join('')}</div>
         <div class="simple-comparison">
           <div class="compare-card compare-today"><span>Hoje</span><strong>${currency(projection.monthly)}<small>/mês</small></strong></div>
-          <div class="compare-card compare-future"><span>Depois, com o Desato</span><strong>${currency(projection.projected)}<small>/mês</small></strong><div class="compare-breakdown"><span>Bebidas ${currency(projection.monthly*(1-reduction))}</span><span>+ Desato ${currency(OFFER.monthlyPrice)}</span></div></div>
+          <div class="compare-card compare-future"><span>Depois</span><strong>${currency(projection.monthly-saved)}<small>/mês</small></strong><div class="compare-breakdown"><span>Bebidas ${currency(projection.monthly-saved)}</span><span>Desato: pago uma vez</span></div></div>
         </div>
-        <div class="compare-saving ${projection.net<0?'extra-cost':''}"><span>${projection.net>=0?'Sobra por mês':'Custo adicional por mês'}</span><p class="net">${currency(Math.abs(projection.net))}<span>${projection.net>=0?' · ' + currency(projection.net*12) + ' por ano':' de custo adicional neste cenário'}</span></p></div>
-        ${projection.net<=0?`<p class="comparison-conclusion">${projection.net===0?'A economia cobriria exatamente a assinatura.':'Nesse cenário, a economia não cobriria a assinatura. O valor está no apoio para mudar.'}</p>`:''}
+        <div class="compare-saving"><span>Sobra por mês</span><p class="net">${currency(saved)}<span> · ${currency(saved*12)} por ano</span></p></div>
+        ${paybackDays?`<p class="comparison-conclusion payback">Nesse ritmo, o Desato se paga em <strong>${paybackDays} ${paybackDays===1?'dia':'dias'}</strong>.</p>`:''}
       </div>
-    </section>`:`<section class="offer-value"><div class="scenario-panel offer-comparison"><div class="compare-saving extra-cost"><span>Custo adicional por mês</span><p class="net">${currency(OFFER.monthlyPrice)}<span> de custo adicional neste cenário</span></p></div><p class="comparison-conclusion">Sem gasto com saídas, a economia não cobriria a assinatura. O valor está no apoio para mudar.</p></div></section>`}
+    </section>`:`<section class="offer-value"><div class="scenario-panel offer-comparison"><div class="compare-saving extra-cost"><span>Investimento único</span><p class="net">${currency(OFFER.price)}<span> sem mensalidade</span></p></div><p class="comparison-conclusion">Sem gasto com essas saídas, não há economia para calcular. O valor está no apoio para mudar.</p></div></section>`}
 
     <section class="offer-price" id="offer-price">
-      <p class="price-label">${OFFER.priceConfirmed?'ASSINATURA MENSAL':'PLANO MENSAL EM PLANEJAMENTO'}</p>
-      <p class="price-value">${currency(OFFER.monthlyPrice)}<small>/mês</small></p>
-      <p class="price-day">Cerca de ${currency(perDay)} por dia</p>
-      ${OFFER.priceConfirmed?'':'<div class="price-status">Preço de referência para esta proposta.</div>'}
+      <p class="price-label">PAGAMENTO ÚNICO</p>
+      <p class="price-value">${currency(OFFER.price)}</p>
+      <p class="price-day">Acesso para sempre, sem mensalidade</p>
       ${checkout}
       <p class="offer-trust">Pagamento seguro · Acesso no celular e no computador</p>
       ${OFFER.checkoutUrl?'<p class="offer-endnote">Depois do pagamento, crie sua conta no app com o mesmo e-mail.</p>':'<p class="offer-endnote">Contratação ainda não disponível.</p>'}
     </section>
     <p class="calculation-note">Simulação com o mesmo gasto médio nas saídas restantes. A economia depende de uma mudança real; não é garantida pelo aplicativo.</p>
-    ${OFFER.checkoutUrl?`<div class="sticky-cta"><div><strong>${currency(OFFER.monthlyPrice)}/mês</strong><span>Cerca de ${currency(perDay)} por dia</span></div><button type="button" id="sticky-checkout">Começar</button></div>`:''}
+    ${OFFER.checkoutUrl?`<div class="sticky-cta"><div><strong>${currency(OFFER.price)}</strong><span>Pagamento único</span></div><button type="button" id="sticky-checkout">Começar</button></div>`:''}
     <p id="save-status" class="save-status" role="status" hidden></p><p id="quiz-error" class="quiz-error" role="alert" tabindex="-1"></p></section>`;
   document.querySelector('#sticky-checkout')?.addEventListener('click',()=>document.querySelector('.checkout-action')?.click());
   main.querySelectorAll('[data-reduction]').forEach(button=>button.addEventListener('click',()=>{reduction=Number(button.dataset.reduction);offerScreen();}));

@@ -13,7 +13,7 @@ if (!SUPABASE_KEY.startsWith('sb_publishable_')) throw new Error('Use apenas a c
 const cloud = createCloud({ url: SUPABASE_URL, key: SUPABASE_KEY });
 // Acesso ao /app exige assinatura ativa na Cakto (tabela desato_subscriptions).
 const SUBSCRIPTION_REQUIRED = process.env.SUBSCRIPTION_REQUIRED !== 'false';
-const CHECKOUT_URL = 'https://pay.cakto.com.br/6fnsj7n';
+const CHECKOUT_URL = 'https://pay.cakto.com.br/wm4tnum';
 
 const PORT = process.env.PORT || 4173;
 const HOST = process.env.HOST || '127.0.0.1';

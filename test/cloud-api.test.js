@@ -112,7 +112,7 @@ test('conta sem assinatura ativa recebe 402 com link de pagamento e não lê dad
   try {
     const blocked = await request('/api/state', 'GET', undefined, 'valid-bob');
     assert.equal(blocked.status, 402);
-    assert.equal(blocked.data.checkoutUrl, 'https://pay.cakto.com.br/6fnsj7n');
+    assert.equal(blocked.data.checkoutUrl, 'https://pay.cakto.com.br/wm4tnum');
     assert.equal(blocked.data.store, undefined);
     assert.equal((await request('/api/checkin', 'POST', { status: 'sober' }, 'valid-bob')).status, 402);
     assert.equal((await request('/api/state', 'GET', undefined, 'valid-alice')).status, 200);
