@@ -24,8 +24,11 @@ const ALLOWED_ORIGINS = [
   "http://localhost:4173",
 ];
 
+// Desenvolvimento local: localhost e 127.0.0.1 em qualquer porta.
+const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d{1,5})?$/;
+const allowed = (origin: string | null) => !!origin && (ALLOWED_ORIGINS.includes(origin) || LOCAL_ORIGIN.test(origin));
 const cors = (origin: string | null) => ({
-  "Access-Control-Allow-Origin": origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+  "Access-Control-Allow-Origin": allowed(origin) ? origin! : ALLOWED_ORIGINS[0],
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "content-type, apikey, authorization, x-client-info",
   "Vary": "Origin",
