@@ -919,3 +919,7 @@ button:disabled { cursor: default; opacity: .65; }
 .auth-switch a { color: #185a3e; font-weight: 650; }
 .auth-copyright { margin: 0; text-align: center; font-size: 12px; color: #7a8a80; }
 .auth-card [hidden], .auth-layout [hidden] { display: none !important; }
+/* Dias passados sem registro em amarelo */
+.calendar-day.unmarked { background: #fde9a8; color: #6b5310; border-color: #f2d37a; }
+.legend-unmarked { background: #f2c94c !important; }
+.month-number.unmarked strong { color: #b08a1c; }
