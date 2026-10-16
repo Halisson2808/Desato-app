@@ -53,11 +53,11 @@ Deno.serve(async (req) => {
   const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false, autoRefreshToken: false } });
   const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim().slice(0, 64);
 
-  // Limite de tentativas por IP e por e-mail.
+  // Limite só para tentativas recusadas (e-mail sem compra): entradas válidas nunca bloqueiam.
   const since = new Date(Date.now() - WINDOW_MS).toISOString();
   const [byIp, byEmail] = await Promise.all([
-    admin.from("desato_login_attempts").select("id", { count: "exact", head: true }).eq("ip", ip).gte("at", since),
-    admin.from("desato_login_attempts").select("id", { count: "exact", head: true }).eq("email", email).gte("at", since),
+    admin.from("desato_login_attempts").select("id", { count: "exact", head: true }).eq("ip", ip).eq("allowed", false).gte("at", since),
+    admin.from("desato_login_attempts").select("id", { count: "exact", head: true }).eq("email", email).eq("allowed", false).gte("at", since),
   ]);
   if ((byIp.count ?? 0) >= MAX_PER_IP || (byEmail.count ?? 0) >= MAX_PER_EMAIL) {
     return reply(429, { error: "Muitas tentativas. Aguarde alguns minutos e tente de novo." });
