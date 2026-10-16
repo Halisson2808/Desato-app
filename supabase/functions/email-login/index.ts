@@ -17,6 +17,8 @@ const MAX_PER_IP = 20;      // tentativas por IP em 15 minutos
 const MAX_PER_EMAIL = 10;   // tentativas por e-mail em 15 minutos
 const WINDOW_MS = 15 * 60_000;
 const ALLOWED_ORIGINS = [
+  "https://desatoapp.com.br",
+  "https://www.desatoapp.com.br",
   "https://desato-app.vercel.app",
   "http://127.0.0.1:4173",
   "http://localhost:4173",
