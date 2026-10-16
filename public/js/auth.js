@@ -36,7 +36,7 @@ export const auth = {
       });
     } catch { throw new Error('network'); }
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || 'Não foi possível entrar. Tente novamente.');
+    if (!response.ok) { const failure = new Error(data.error || 'Não foi possível entrar. Tente novamente.'); failure.status = response.status; throw failure; }
     const { error } = await client.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token });
     if (error) throw error;
   },

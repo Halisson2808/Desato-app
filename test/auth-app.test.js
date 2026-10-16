@@ -92,3 +92,20 @@ test('formulário envia só o e-mail, valida o formato e mostra o erro do servid
   assert.deepEqual(sent, ['sem-compra@example.test', 'alice@example.test']);
   assert.equal(app.entries.get('desato-remember-email'), 'alice@example.test');
 });
+
+test('e-mail sem compra mostra o aviso com o caminho para comprar; outros erros não', async () => {
+  const app = await boot();
+  const email = app.document.querySelector('#auth-email');
+  app.context.__auth.emailLogin = async mail => { const error = new Error(mail.startsWith('sem') ? 'Não encontramos uma compra' : 'Muitas tentativas'); error.status = mail.startsWith('sem') ? 403 : 429; throw error; };
+  const submit = async value => { email.value = value; app.document.querySelector('#auth-form').dispatchEvent(new app.document.defaultView.Event('submit', { cancelable: true })); await app.flush(); await app.flush(); };
+  assert.equal(app.document.querySelector('#auth-no-purchase').hidden, true);
+  await submit('sem-compra@example.test');
+  assert.equal(app.document.querySelector('#auth-no-purchase').hidden, false);
+  assert.equal(app.document.querySelector('.auth-buy').getAttribute('href'), '/quiz');
+  assert.match(app.document.querySelector('.auth-buy').textContent, /Quero conhecer o Desato/);
+  assert.equal(app.document.querySelector('#auth-switch').hidden, true);
+  await submit('outro@example.test');
+  assert.equal(app.document.querySelector('#auth-no-purchase').hidden, true);
+  assert.equal(app.document.querySelector('#auth-switch').hidden, false);
+  assert.match(app.document.querySelector('.auth-copyright').textContent, /Todos os direitos reservados/);
+});

@@ -908,3 +908,13 @@ button:disabled { cursor: default; opacity: .65; }
 .sos-focus, #sos-stage { width: 100%; max-width: 100%; box-sizing: border-box; min-width: 0; }
 .sos-card h2, .sos-copy, .sos-question, .sos-meter, .sos-step-tag { overflow-wrap: anywhere; }
 .sos-admin-skip { justify-self: center; margin-top: 4px; border: 1px dashed rgba(255,214,122,.6); background: transparent; color: #ffd27a; border-radius: 12px; padding: 10px 16px; min-height: 40px; font-size: 13px; font-weight: 700; cursor: pointer; }
+/* Entrada: marca centralizada, aviso de compra e direitos reservados */
+.auth-layout { gap: 18px; align-content: center; }
+.auth-brand-center { justify-content: center; }
+.auth-center { text-align: center; }
+.auth-no-purchase { margin-top: 16px; padding: 16px; border-radius: 14px; background: #fff7ea; border: 1px solid #efd6a6; display: grid; gap: 8px; text-align: center; }
+.auth-no-purchase strong { color: #6f4a14; font-size: 14px; }
+.auth-no-purchase p { margin: 0; color: #6f5a3a; font-size: 13px; line-height: 1.55; }
+.auth-buy { display: flex; align-items: center; justify-content: center; text-decoration: none; margin-top: 4px; }
+.auth-switch a { color: #185a3e; font-weight: 650; }
+.auth-copyright { margin: 0; text-align: center; font-size: 12px; color: #7a8a80; }

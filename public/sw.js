@@ -1,5 +1,5 @@
-const CACHE = 'app-mvp-v27';
-const ASSETS = ['/', '/app', '/quiz', '/site.css', '/funnel.css', '/js/site.js', '/js/quiz.js', '/js/quiz-model.js', '/styles.css', '/js/app.js', '/js/api.js', '/js/utils.js',
+const CACHE = 'app-mvp-v29';
+const ASSETS = ['/', '/app', '/page', '/quiz', '/site.css', '/funnel.css', '/js/site.js', '/js/quiz.js', '/js/quiz-model.js', '/styles.css', '/js/app.js', '/js/api.js', '/js/utils.js',
   '/js/views/home.js', '/js/views/routine.js', '/js/views/sos.js',
   '/js/views/food.js', '/js/views/profile.js', '/js/views/support.js',
   '/js/content/home-progress.js', '/js/content/journey.js', '/js/content/situations.js', '/js/content/body.js', '/js/features.js', '/js/auth.js', '/js/views/auth.js', '/vendor/supabase.js', '/icon.svg', '/manifest.webmanifest'];

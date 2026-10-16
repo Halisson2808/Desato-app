@@ -123,7 +123,7 @@ test('logo e módulos das telas são servidos com tipos aceitos pelo navegador',
 });
 
 test('site, app e cinco rotas de quiz públicos servem as páginas corretas', async () => {
-  const pages = [['/', '/js/site.js'], ['/app','/js/app.js'], ...['consumo','vontade','gatilhos','impacto','retomada'].map(id => ['/quiz/'+id,'/js/quiz.js']), ['/quiz','/js/quiz.js']];
+  const pages = [['/', '/js/app.js'], ['/page', '/js/site.js'], ['/app','/js/app.js'], ...['consumo','vontade','gatilhos','impacto','retomada'].map(id => ['/quiz/'+id,'/js/quiz.js']), ['/quiz','/js/quiz.js']];
   for (const [route,script] of pages) { const response = await fetch(base+route); assert.equal(response.status,200); assert.match(response.headers.get('content-type'),/text\/html/); assert.ok((await response.text()).includes(script)); }
 });
 test('funil local registra visitantes separados, rejeita token errado e não altera contas',async()=>{

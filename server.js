@@ -361,7 +361,7 @@ async function handleApi(req, res, pathname) {
 }
 
 function serveStatic(req, res, pathname) {
-  let requested = pathname === '/' ? '/site.html' : /^\/quiz(?:\/|$)/.test(pathname) ? '/quiz.html' : /^\/app(?:\/|$)/.test(pathname) ? '/index.html' : pathname;
+  let requested = pathname === '/' ? '/index.html' : /^\/page\/?$/.test(pathname) ? '/site.html' : /^\/quiz(?:\/|$)/.test(pathname) ? '/quiz.html' : /^\/app(?:\/|$)/.test(pathname) ? '/index.html' : pathname;
   requested = decodeURIComponent(requested);
   const safe = path.normalize(requested).replace(/^([.][.][\/\\])+/, '');
   let filePath = path.join(PUBLIC_DIR, safe);
