@@ -255,12 +255,13 @@ async function handleApi(req, res, pathname) {
   if (pathname === '/api/config' && method === 'GET') return json(res, 200, { mode: STORAGE_MODE, supabaseUrl: SUPABASE_URL, publishableKey: SUPABASE_KEY, funnelEnabled:process.env.FUNNEL_ENABLED === 'true' });
   if (pathname === '/api/health' && method === 'GET') return json(res, 200, { app: 'desato', mode: STORAGE_MODE });
   if (STORAGE_MODE === 'supabase') {
-    const session = await cloud.authenticate(req);
-    // Papel (admin/usuário) fica no banco: desato_user_roles. Admin tem acesso sem assinatura.
-    if (SUBSCRIPTION_REQUIRED && !(await cloud.hasAccess(session))) return json(res, 402, { error: 'Sua assinatura não está ativa.', checkoutUrl: CHECKOUT_URL });
+    // Identidade e acesso são conferidos em paralelo para responder mais rápido.
+    // Papel (admin/usuário) fica no banco: desato_user_roles. Admin tem acesso sem compra.
+    const [session, access] = await Promise.all([cloud.authenticate(req), SUBSCRIPTION_REQUIRED ? cloud.hasAccessForRequest(req) : true]);
+    if (!access) return json(res, 402, { error: 'Sua assinatura não está ativa.', checkoutUrl: CHECKOUT_URL });
     if (method === 'GET' && ['/api/state', '/api/summary'].includes(pathname)) {
-      const store = await cloud.state(session, defaultStore);
-      if (pathname === '/api/state') return json(res, 200, { store, summary: summary(store), admin: await cloud.isAdmin(session) });
+      const [store, admin] = await Promise.all([cloud.state(session, defaultStore), pathname === '/api/state' ? cloud.isAdmin(session) : false]);
+      if (pathname === '/api/state') return json(res, 200, { store, summary: summary(store), admin });
       return json(res, 200, summary(store));
     }
     await cloud.mutate(session, pathname, method, body, value => validDate(value ?? localISO()), { journeyLength: JOURNEY_LENGTH, situationIds: SITUATION_IDS });

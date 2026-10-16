@@ -787,7 +787,7 @@ button:disabled { cursor: default; opacity: .65; }
 .weekday-bars span { align-self: end; border-radius: 6px 6px 3px 3px; background: #d7e6df; }
 .weekday-bars span.peak { background: var(--danger); }
 .weekday-bars small { font-size: 11px; font-weight: 700; color: var(--muted); }
-@media (min-width: 900px) { .insight-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 900px) { .insight-grid { grid-template-columns: repeat(2, 1fr); } }
 
 /* Jornada */
 .journey-screen, .situations-screen, .body-screen { display: grid; gap: 16px; }

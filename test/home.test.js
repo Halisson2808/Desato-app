@@ -36,7 +36,7 @@ async function boot(data=store()){
   const bundled=await build({entryPoints:[path.join(root,'public/js/views/home.js')],bundle:true,write:false,format:'iife',globalName:'HomeTest'});
   vm.runInContext(bundled.outputFiles[0].text,context);
   const view=context.HomeTest.homeView,state={store:data,summary:{today,routine:{done:1,total:2}},ui:{}},writes=[],modals=[];
-  const ctx={state,endpoints:{checkin:async body=>{writes.push(body);state.store.checkins[body.date]={status:body.status,note:body.note};}},mutate:async action=>{await action();redraw();return true;},openModal:modal=>modals.push(modal),navigate(){},redraw:()=>redraw()};
+  const ctx={state,endpoints:{checkin:async body=>{writes.push(body);state.store.checkins[body.date]={status:body.status,note:body.note};}},mutate:async action=>{await action();redraw();return true;},openModal:modal=>modals.push(modal),toast(){},refresh(){},navigate(){},redraw:()=>redraw()};
   function redraw(){document.querySelector('#view').innerHTML=view.html(ctx);view.bind(ctx);}
   redraw();
   const click=selector=>document.querySelector(selector).dispatchEvent(new document.defaultView.Event('click'));
