@@ -247,7 +247,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   backdrop-filter: blur(18px);
   border-top: 1px solid rgba(13, 95, 75, .11);
   display: grid;
-  grid-template-columns: repeat(5,1fr);
+  grid-template-columns: repeat(6,1fr);
   box-shadow: 0 -8px 28px rgba(29,66,56,.08);
 }
 .nav-btn { border: 0; background: transparent; color: #7d8e88; border-radius: 14px; min-height: 58px; padding: 6px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 9px; font-weight: 720; }
@@ -353,7 +353,7 @@ body { padding: 0; background: #f2f6f4; }
   transform: none;
   width: 100%;
   max-width: none;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   padding: 7px 7px calc(8px + env(safe-area-inset-bottom));
 }
 .nav-btn {

@@ -41,7 +41,8 @@ const navItems = [
   ['rotina', 'routine', 'Jornada'],
   ['sos', 'sos', 'SOS'],
   ['alimentacao', 'food', 'Corpo'],
-  ['apoio', 'support', 'Situações']
+  ['apoio', 'support', 'Situações'],
+  ['perfil', 'profile', 'Perfil']
 ];
 
 const appState = {
@@ -75,22 +76,15 @@ function setRoute(route) {
 }
 
 function renderHeader() {
-  const name = appState.store?.profile?.name || '';
-  const initial = name.trim().slice(0, 1).toUpperCase();
-  const signedOut = appState.storageMode === 'supabase' && !appState.authUser;
   $('#app-header').innerHTML = `
     <div class="header-row">
       <button class="desato-brand" id="header-home" aria-label="Desato — ir para o início">
         <img class="desato-brand-mark" src="/icon.svg" width="40" height="40" alt="" aria-hidden="true">
         <span class="desato-wordmark">${APP_NAME}</span>
       </button>
-      <button class="profile-avatar-btn" id="header-profile" aria-label="${signedOut ? 'Entrar na conta' : 'Abrir perfil'}" title="${signedOut ? 'Entrar' : 'Meu perfil'}">
-        ${signedOut ? icon('profile') : initial ? escapeHtml(initial) : icon('profile')}
-      </button>
     </div>
   `;
   $('#header-home')?.addEventListener('click', () => setRoute('inicio'));
-  $('#header-profile')?.addEventListener('click', () => signedOut ? showAuth() : setRoute('perfil'));
 }
 
 function renderNav() {
