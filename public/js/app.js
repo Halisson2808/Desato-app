@@ -69,7 +69,7 @@ function setRoute(route) {
   if (!routes[route]) route = 'inicio';
   appState.route = route;
   localStorage.setItem('meu-caminho-route', route);
-  history.replaceState(null, '', `#${route}`);
+  history.replaceState(null, '', `/app#${route}`);
   render();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -235,9 +235,13 @@ function render() {
       return;
     }
     const ctx = { state: appState, auth, email: localStorage.getItem('desato-remember-email') || '', showAuth, navigate: setRoute };
+    // Fora da conta, o endereço volta para a entrada (/).
+    if (location.pathname !== '/') history.replaceState(null, '', '/');
     $('#view').innerHTML = authView.html(ctx); authView.bind(ctx); return;
   }
   $('#app').classList.toggle('sos-mode', appState.route === 'sos');
+  // Dentro da conta, o endereço fica em /app.
+  if (!location.pathname.startsWith('/app')) history.replaceState(null, '', `/app#${appState.route}`);
   renderNav();
   renderHeader();
   if (appState.checkoutUrl) {
