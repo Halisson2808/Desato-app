@@ -923,3 +923,5 @@ button:disabled { cursor: default; opacity: .65; }
 .calendar-day.unmarked { background: #fde9a8; color: #6b5310; border-color: #f2d37a; }
 .legend-unmarked { background: #f2c94c !important; }
 .month-number.unmarked strong { color: #b08a1c; }
+/* iPhone dá zoom em campos com letra menor que 16px: no celular, todo campo usa 16px */
+@media (max-width: 900px) { input, textarea, select { font-size: 16px !important; } }

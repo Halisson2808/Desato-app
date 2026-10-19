@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /page
+Allow: /quiz
+Disallow: /api/
+Disallow: /app
+
+Sitemap: https://www.desatoapp.com.br/sitemap.xml
