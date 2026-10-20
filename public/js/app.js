@@ -98,7 +98,7 @@ function renderNav() {
     </div>
     <div class="nav-list">
       ${navItems.filter(([id]) => canSee(id, appState.admin)).map(([id, iconName, label]) => `
-        <button class="nav-btn ${id === appState.route ? 'active' : ''} ${id === 'sos' ? 'sos' : ''}" data-route="${id}" ${id === appState.route ? 'aria-current="page"' : ''}>
+        <button class="nav-btn ${id === appState.route ? 'active' : ''}" data-route="${id}" ${id === appState.route ? 'aria-current="page"' : ''}>
           <span class="nav-icon">${icon(iconName)}</span>
           <span class="nav-label">${label}</span>
         </button>
@@ -236,7 +236,6 @@ function render() {
     if (location.pathname !== '/') history.replaceState(null, '', '/');
     $('#view').innerHTML = authView.html(ctx); authView.bind(ctx); return;
   }
-  $('#app').classList.toggle('sos-mode', appState.route === 'sos');
   // Dentro da conta, o endereço fica em /app.
   if (!location.pathname.startsWith('/app')) history.replaceState(null, '', `/app#${appState.route}`);
   renderNav();

@@ -1026,3 +1026,28 @@ button:disabled { cursor: default; opacity: .65; }
 .cal2 .calendar-day.is-today > span:first-child { font-weight: 700; }
 .cal2 .calendar-day:not(:disabled):not(.outside):hover { outline: 2px solid #9cc4ac; outline-offset: 1px; }
 .cal2 .legend-clean { background: #9fd28f; } .cal2 .legend-used { background: #f0a39b; } .cal2 .legend-unmarked { background: #f2d36b !important; }
+/* SOS em tema claro, igual às outras telas (sem fundo verde) */
+.sos-focus { background: transparent !important; box-shadow: none !important; color: var(--text) !important; padding: 4px 0 10px !important; }
+.sos-title h1, .sos-card h2, .sos-question, .sos-promise, .sos-timer p, .sos-count-now strong, .ritual-body h2 { color: var(--text) !important; }
+.sos-title p, .sos-copy, .sos-intro > p, .sos-meter, .sos-done p, .sos-timer small, .sos-count-now small { color: var(--muted) !important; }
+.sos-badge { background: var(--primary) !important; color: #fff !important; box-shadow: none !important; }
+.sos-step-tag, .sos-count-now span { color: var(--primary-2) !important; }
+.sos-cancel, .sos-ghost { border-color: var(--line) !important; color: var(--muted) !important; background: var(--surface) !important; }
+.sos-progress i { background: var(--line) !important; }
+.sos-progress small { color: var(--muted) !important; }
+.sos-progress .active i { background: var(--primary-2) !important; box-shadow: none !important; }
+.sos-progress .active small { color: var(--text) !important; }
+.sos-progress .done i { background: #9fd8bf !important; }
+.sos-progress .done small { color: var(--primary) !important; }
+.sos-scale button, .sos-chip { background: var(--surface) !important; border-color: var(--line) !important; color: var(--text) !important; }
+.sos-scale button.selected, .sos-chip.selected { background: var(--primary) !important; border-color: var(--primary) !important; color: #fff !important; }
+.sos-next { background: var(--primary) !important; color: #fff !important; }
+.sos-breath { background: rgba(19,130,100,.08) !important; box-shadow: 0 0 0 1px rgba(19,130,100,.2) !important; }
+.sos-breath-core { color: #fff !important; background: linear-gradient(150deg, #2fa77f, #0b5d4b) !important; }
+.sos-timer, .sos-count-now { background: var(--surface) !important; border: 1px solid var(--line) !important; }
+.sos-timer > strong { color: var(--primary) !important; }
+.sos-count-form input { border-color: var(--line) !important; background: var(--surface) !important; }
+.sos-trail span { background: var(--primary-3) !important; color: var(--primary) !important; }
+.sos-done-check { background: var(--primary) !important; color: #fff !important; }
+.sos-footnote { color: var(--muted) !important; }
+.sos-admin-skip { color: #8a5d0b !important; border-color: #e5c27a !important; }
