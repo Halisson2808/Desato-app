@@ -7,7 +7,8 @@ export async function initializeAuth(onChange) {
   config = await response.json();
   if (config.mode === 'json') return { config, session: null };
   client = createClient(config.supabaseUrl, config.publishableKey, { auth: {
-    persistSession: true, // a sessão fica salva: reabrir o /app entra direto autoRefreshToken: true, detectSessionInUrl: false,
+    // A sessão fica salva: reabrir o /app entra direto.
+    persistSession: true, autoRefreshToken: true, detectSessionInUrl: false,
     storageKey: 'desato-auth-session', flowType: 'pkce'
   } });
   client.auth.onAuthStateChange((event, session) => {
