@@ -5,7 +5,7 @@ export const FEATURES = {
   rotina: true,       // Jornada
   sos: true,
   alimentacao: true,  // Corpo e saúde
-  apoio: true,        // Situações difíceis
+  apoio: false,       // Situações difíceis: removida do menu
   perfil: true,
   plano: false        // PRÉVIA: só administrador vê até lançar
 };

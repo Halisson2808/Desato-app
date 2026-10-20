@@ -45,7 +45,6 @@ const navItems = [
   ['rotina', 'routine', 'Jornada'],
   ['sos', 'sos', 'SOS'],
   ['alimentacao', 'food', 'Corpo'],
-  ['apoio', 'support', 'Situações'],
   ['perfil', 'profile', 'Perfil']
 ];
 
@@ -84,7 +83,7 @@ function renderHeader() {
     <div class="header-row">
       <button class="desato-brand" id="header-home" aria-label="Desato — ir para o início">
         <img class="desato-brand-mark" src="/icon.svg" width="40" height="40" alt="" aria-hidden="true">
-        <span class="desato-wordmark">${APP_NAME}</span>
+        <span class="desato-wordmark">${APP_NAME}<small class="desato-wordmark-app">App</small></span>
       </button>
     </div>
   `;

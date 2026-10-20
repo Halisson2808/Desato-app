@@ -1001,3 +1001,28 @@ button:disabled { cursor: default; opacity: .65; }
 .profile-inline { display: grid; gap: 4px; padding: 18px; }
 .profile-inline input[readonly] { background: #eef1ef; color: #6b7a72; cursor: not-allowed; }
 .profile-inline small { display: block; margin-top: 6px; font-size: 12px; color: var(--muted); }
+/* Marca: "App" menor ao lado de Desato */
+.desato-wordmark-app { font-size: 13px; font-weight: 600; letter-spacing: 0; margin-left: 4px; opacity: .75; }
+/* Calendário estilo "Meu Calendário": dias em círculo */
+.cal2 { background: #fff; border: 1px solid #e3ece6; border-radius: 22px; padding: 18px 16px 16px; }
+.cal2-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+.cal2-title { display: flex; align-items: center; gap: 10px; }
+.cal2-title svg { width: 26px; height: 26px; color: #1f6b48; }
+.cal2-title h3 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
+.cal2-nav { display: flex; align-items: center; gap: 6px; }
+.cal2-nav strong { font-size: 13px; font-weight: 600; text-transform: capitalize; white-space: nowrap; }
+.cal2-nav button { width: 30px; height: 30px; border: 0; background: transparent; color: #17362f; font-size: 22px; line-height: 1; cursor: pointer; border-radius: 8px; }
+.cal2-nav button:disabled { opacity: .3; cursor: default; }
+.cal2 .calendar-weekdays { font-size: 13px; color: #4b5a53; margin-bottom: 6px; }
+.cal2 .calendar-days { gap: 6px 2px; }
+.cal2 .calendar-day { width: 38px; height: 38px; min-height: 0; margin: 0 auto; padding: 0; border-radius: 50%; border: 0; background: transparent; color: #17362f; font-size: 15px; box-shadow: none; }
+.cal2 .calendar-day > span:first-child { font-size: 15px; font-weight: 500; }
+.cal2 .calendar-day.clean { background: #d6eccf; color: #1d4d33; }
+.cal2 .calendar-day.used { background: #f8d3cf; color: #8a2b25; }
+.cal2 .calendar-day.unmarked { background: #fdf0c2; color: #6b5310; }
+.cal2 .calendar-day.future { background: transparent; color: #17362f; border: 0; opacity: .9; }
+.cal2 .calendar-day.outside { color: #b7c0bb; }
+.cal2 .calendar-day.is-today { background: #0d5c3b; color: #fff; box-shadow: none; }
+.cal2 .calendar-day.is-today > span:first-child { font-weight: 700; }
+.cal2 .calendar-day:not(:disabled):not(.outside):hover { outline: 2px solid #9cc4ac; outline-offset: 1px; }
+.cal2 .legend-clean { background: #9fd28f; } .cal2 .legend-used { background: #f0a39b; } .cal2 .legend-unmarked { background: #f2d36b !important; }
