@@ -8,6 +8,7 @@ import { sosView } from './views/sos.js';
 import { foodView } from './views/food.js';
 import { profileView } from './views/profile.js';
 import { supportView } from './views/support.js';
+import { planView } from './views/plan.js';
 import { canSee } from './features.js';
 
 // Nome da marca na interface; use Desato App nos metadados de descoberta.
@@ -19,6 +20,7 @@ const routes = {
   sos: sosView,
   alimentacao: foodView,
   apoio: supportView,
+  plano: planView,
   perfil: profileView
 };
 
@@ -31,6 +33,7 @@ function icon(name, className = '') {
     sos: `<path d="M12 3a8 8 0 1 0 8 8c0-4.4-3.6-8-8-8Z"/><path d="M12 7v5"/><path d="M12 16h.01"/>`,
     food: `<path d="M12 20s-8-4.8-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.2-8 10-8 10Z"/><path d="M6 12h3l1.5-3 3 6 1.5-3h3"/>`,
     support: `<path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/>`,
+    plan: `<path d="M9 4h6a2 2 0 0 1 2 2v14l-5-3-5 3V6a2 2 0 0 1 2-2Z"/><path d="M10 9h4"/>`,
     profile: `<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>`
   };
   return `<svg ${attrs}>${paths[name] || paths.logo}</svg>`;
@@ -38,6 +41,7 @@ function icon(name, className = '') {
 
 const navItems = [
   ['inicio', 'home', 'Início'],
+  ['plano', 'plan', 'Plano'],
   ['rotina', 'routine', 'Jornada'],
   ['sos', 'sos', 'SOS'],
   ['alimentacao', 'food', 'Corpo'],

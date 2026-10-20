@@ -6,7 +6,8 @@ export const FEATURES = {
   sos: true,
   alimentacao: true,  // Corpo e saúde
   apoio: true,        // Situações difíceis
-  perfil: true
+  perfil: true,
+  plano: false        // PRÉVIA: só administrador vê até lançar
 };
 
 export const canSee = (feature, admin) => FEATURES[feature] === true || admin === true;

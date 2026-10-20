@@ -925,3 +925,65 @@ button:disabled { cursor: default; opacity: .65; }
 .month-number.unmarked strong { color: #b08a1c; }
 /* iPhone dá zoom em campos com letra menor que 16px: no celular, todo campo usa 16px */
 @media (max-width: 900px) { input, textarea, select { font-size: 16px !important; } }
+
+/* Barra de baixo se ajusta ao número de abas (admin vê a prévia do Plano) */
+.bottom-nav { grid-template-columns: none !important; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+
+/* Prévia: aba Plano */
+.plan-screen { display: grid; gap: 16px; }
+.plan-screen .screen-title { margin-bottom: 0; }
+.plan-preview-tag { justify-self: start; margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .08em; color: #8a5d0b; background: #fdf3df; border: 1px dashed #e5c27a; border-radius: 99px; padding: 6px 12px; }
+.plan-hero { border-radius: 24px; padding: 22px 20px; color: #fff; background: linear-gradient(150deg, #06261f, #0d4d3e); box-shadow: var(--shadow); display: grid; gap: 6px; }
+.plan-hero > span { font-size: 11px; font-weight: 800; letter-spacing: .12em; color: #8fdcbf; }
+.plan-hero > strong { font-size: 34px; letter-spacing: -1px; line-height: 1.1; }
+.plan-hero > p { margin: 0; color: rgba(255,255,255,.8); font-size: 15px; }
+.plan-steps-preview { list-style: none; display: flex; gap: 6px; padding: 0; margin: 10px 0 4px; flex-wrap: wrap; }
+.plan-steps-preview li { font-size: 13px; font-weight: 700; padding: 7px 12px; border-radius: 99px; background: rgba(255,255,255,.1); counter-increment: step; }
+.plan-steps-preview li::before { content: counter(step) ". "; color: #8fdcbf; }
+.plan-go { margin-top: 10px; min-height: 54px; border: 0; border-radius: 16px; background: #7ee0bb; color: #06261f; font-size: 17px; font-weight: 800; cursor: pointer; }
+.plan-list { display: grid; gap: 10px; }
+.plan-list h3 { margin: 4px 0; font-size: 17px; }
+.plan-card { display: grid; grid-template-columns: 64px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+.plan-card-time { display: grid; place-items: center; height: 64px; border-radius: 14px; background: var(--primary-3); color: var(--primary); }
+.plan-card-time strong { font-size: 15px; }
+.plan-card-time span { font-size: 13px; font-weight: 700; }
+.plan-card-body strong { display: block; font-size: 15px; }
+.plan-card-body p { margin: 3px 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.plan-card-body small { font-size: 12px; font-weight: 700; color: var(--success); }
+.plan-card-edit { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--muted); font-size: 16px; cursor: pointer; }
+.plan-add { min-height: 50px; border-radius: 16px; border: 1.5px dashed #a9cdb6; background: transparent; color: var(--primary); font-size: 15px; font-weight: 700; cursor: pointer; }
+.plan-editor { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 20px; }
+.plan-editor > label { font-size: 15px; font-weight: 750; margin-top: 8px; }
+.plan-editor input, .plan-editor select { min-height: 48px; border: 1px solid var(--line); border-radius: 14px; padding: 0 14px; font: inherit; font-size: 16px; background: var(--surface-2); }
+.plan-when { display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; }
+.plan-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.plan-chip { border: 1px solid var(--line); background: var(--surface-2); border-radius: 99px; padding: 10px 14px; min-height: 42px; font-size: 14px; color: var(--text); cursor: pointer; }
+.plan-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 700; }
+.plan-cancel { border: 0; background: transparent; color: var(--muted); text-decoration: underline; min-height: 40px; cursor: pointer; }
+/* Ritual: respiro, espero, sigo meu plano */
+.ritual { min-height: 78vh; margin: -6px -2px 0; border-radius: 26px; padding: 18px 18px 24px; color: #eaf7f1; background: radial-gradient(circle at 85% 0, rgba(94,214,170,.18), transparent 40%), linear-gradient(170deg, #06261f, #0a3d32 60%, #0c4a3c); display: grid; align-content: start; gap: 18px; }
+.ritual-top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; color: #8fdcbf; }
+.ritual-top button { border: 1px solid rgba(255,255,255,.2); background: transparent; color: #cfe9de; border-radius: 99px; padding: 8px 14px; cursor: pointer; }
+.ritual-progress { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ritual-progress span { display: grid; gap: 6px; text-align: center; font-size: 12px; font-weight: 700; color: rgba(234,247,241,.6); }
+.ritual-progress i { height: 6px; border-radius: 99px; background: rgba(255,255,255,.18); }
+.ritual-progress .on { color: #fff; } .ritual-progress .on i { background: #7ee0bb; }
+.ritual-progress .done i { background: rgba(126,224,187,.6); }
+.ritual-body { display: grid; gap: 14px; text-align: center; }
+.ritual-body h2 { margin: 6px 0 0; font-size: 30px; letter-spacing: -.03em; color: #fff; }
+.ritual-body > p { margin: 0; font-size: 16px; line-height: 1.55; color: rgba(234,247,241,.88); }
+.ritual-breath { width: 200px; height: 200px; margin: 6px auto; border-radius: 50%; display: grid; place-items: center; background: rgba(126,224,187,.08); box-shadow: 0 0 0 1px rgba(126,224,187,.25); }
+.ritual-breath div { width: 130px; height: 130px; border-radius: 50%; background: linear-gradient(150deg, #7ee0bb, #2fa77f); animation: ritualBreath 10s ease-in-out infinite; }
+@keyframes ritualBreath { 0%, 100% { transform: scale(.6); } 40% { transform: scale(1); } }
+.ritual-timer { font-size: 64px; font-weight: 800; color: #ffd27a; font-variant-numeric: tabular-nums; letter-spacing: -2px; }
+.ritual-note { font-size: 13px !important; color: rgba(234,247,241,.65) !important; }
+.ritual-checks { display: grid; gap: 8px; text-align: left; }
+.ritual-check { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: #eaf7f1; font-size: 16px; cursor: pointer; }
+.ritual-check span { width: 26px; height: 26px; border-radius: 8px; border: 2px solid rgba(255,255,255,.4); display: grid; place-items: center; font-weight: 900; color: #06261f; }
+.ritual-check.on span { background: #7ee0bb; border-color: #7ee0bb; }
+.ritual-info { text-align: left; padding: 12px 16px; border-radius: 14px; background: rgba(255,255,255,.06); }
+.ritual-info small { display: block; font-size: 12px; color: #8fdcbf; font-weight: 700; }
+.ritual-info strong { font-size: 16px; color: #fff; }
+.ritual-next { min-height: 56px; border: 0; border-radius: 16px; background: #7ee0bb; color: #06261f; font-size: 17px; font-weight: 800; cursor: pointer; margin-top: 6px; }
+.ritual-done { width: 84px; height: 84px; margin: 24px auto 0; border-radius: 26px; display: grid; place-items: center; font-size: 40px; font-weight: 900; background: #7ee0bb; color: #06261f; }
+@media (prefers-reduced-motion: reduce) { .ritual-breath div { animation: none; } }
