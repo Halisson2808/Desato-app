@@ -21,12 +21,10 @@ export const profileView = {
 
       <section class="section profile-settings-section">
         <div class="section-head"><div><h3>Minha conta</h3><p>Informações que aparecem no seu acompanhamento.</p></div></div>
-        <div class="settings-list clean-settings">
-          <button class="setting-row" id="profile-edit">
-            <div class="setting-icon setting-icon-line">✎</div>
-            <div class="setting-copy"><strong>Dados pessoais</strong><span>Nome e e-mail</span></div>
-            <div class="chev">›</div>
-          </button>
+        <div class="card profile-inline">
+          <div class="field"><label for="pf-name">Nome</label><input id="pf-name" maxlength="80" value="${escapeHtml(p.name)}"></div>
+          <div class="field"><label for="pf-email">E-mail</label><input id="pf-email" type="email" value="${escapeHtml(p.email)}" readonly aria-readonly="true"><small>O e-mail é o da sua compra e não pode ser trocado.</small></div>
+          <button class="primary-btn" id="pf-save">Salvar nome</button>
         </div>
       </section>
 
@@ -42,25 +40,10 @@ export const profileView = {
       const button = $('#profile-signout'); button.disabled = true;
       try { await ctx.signOut(); } catch (error) { ctx.toast(authMessage(error)); button.disabled = false; }
     });
-    $('#profile-edit')?.addEventListener('click', () => {
-      openModal({
-        title: 'Dados pessoais',
-        subtitle: 'Edite apenas as informações básicas do seu perfil.',
-        content: `
-          <div class="field"><label>Nome</label><input id="pf-name" value="${escapeHtml(p.name)}"></div>
-          <div class="field"><label>E-mail</label><input id="pf-email" type="email" value="${escapeHtml(p.email)}" ${state.storageMode === 'supabase' ? 'readonly' : ''}></div>
-          <button class="primary-btn" id="pf-save">Salvar alterações</button>
-        `,
-        onOpen({ close }) {
-          $('#pf-save')?.addEventListener('click', async () => {
-            const ok = await mutate(() => endpoints.profile({
-              name: $('#pf-name').value.trim(),
-              email: $('#pf-email').value.trim()
-            }), 'Perfil atualizado.');
-            if (ok) close();
-          });
-        }
-      });
+    $('#pf-save')?.addEventListener('click', async () => {
+      const name = $('#pf-name').value.trim();
+      if (!name) { ctx.toast('Digite o seu nome.'); return; }
+      await mutate(() => endpoints.profile({ name }), 'Nome atualizado.');
     });
   }
 };

@@ -987,3 +987,17 @@ button:disabled { cursor: default; opacity: .65; }
 .ritual-next { min-height: 56px; border: 0; border-radius: 16px; background: #7ee0bb; color: #06261f; font-size: 17px; font-weight: 800; cursor: pointer; margin-top: 6px; }
 .ritual-done { width: 84px; height: 84px; margin: 24px auto 0; border-radius: 26px; display: grid; place-items: center; font-size: 40px; font-weight: 900; background: #7ee0bb; color: #06261f; }
 @media (prefers-reduced-motion: reduce) { .ritual-breath div { animation: none; } }
+/* Início: card "Sua evolução" abaixo do calendário */
+.home-evolution { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 14px; margin-top: 14px; padding: 14px 16px; border-radius: 18px; background: #eef6ea; border: 1px solid #d5e8cf; }
+.evolution-icon { display: flex; align-items: end; gap: 3px; height: 26px; padding-right: 14px; border-right: 1px solid #cfe2c8; }
+.evolution-icon i { width: 5px; border-radius: 3px; background: #2f8a55; }
+.evolution-icon i:nth-child(1) { height: 9px; } .evolution-icon i:nth-child(2) { height: 15px; } .evolution-icon i:nth-child(3) { height: 21px; } .evolution-icon i:nth-child(4) { height: 26px; }
+.evolution-copy strong { display: block; font-size: 16px; color: #1d4d33; }
+.evolution-copy span { display: block; font-size: 13px; color: #4f6f58; margin-top: 2px; }
+.evolution-pill { display: grid; justify-items: center; padding: 8px 14px; border-radius: 16px; background: #cdeac0; color: #1d4d33; white-space: nowrap; }
+.evolution-pill strong { font-size: 16px; }
+.evolution-pill span { font-size: 11px; }
+/* Perfil: nome e e-mail à vista */
+.profile-inline { display: grid; gap: 4px; padding: 18px; }
+.profile-inline input[readonly] { background: #eef1ef; color: #6b7a72; cursor: not-allowed; }
+.profile-inline small { display: block; margin-top: 6px; font-size: 12px; color: var(--muted); }
