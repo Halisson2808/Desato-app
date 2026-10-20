@@ -53,7 +53,6 @@ test('datas, status, números e booleanos inválidos são rejeitados', async () 
   for (const body of [{ status: 'other' }, { status: 'clean', date: '2999-01-01' }, { status: 'clean', date: '__proto__' }]) {
     assert.equal((await request('/api/checkin', 'POST', body)).status, 400);
   }
-  assert.equal((await request('/api/hydration', 'POST', { cups: 1.5 })).status, 400);
   assert.equal((await request('/api/money', 'PUT', { spendPerOuting: 'Infinity', outingsPerWeek: 2 })).status, 400);
   assert.equal((await request('/api/checkin', 'POST', null)).status, 400);
   const malformed = await fetch(base + '/api/profile', { method: 'PUT', body: '{' });
@@ -78,11 +77,10 @@ test('mutações concorrentes preservam todos os itens e geram IDs únicos', asy
   assert.ok(ids.every(id => data.store.sos.sessions.some(item => item.id === id)));
 });
 test('hidratação e SOS persistem; rotas antigas não existem mais', async () => {
-  assert.equal((await request('/api/hydration', 'POST', { cups: 8 })).data.cups, 8);
   for (const [route, method] of [['/api/groceries', 'POST'], ['/api/routine/tasks', 'POST'], ['/api/support/plan', 'PUT'], ['/api/quiz', 'GET']]) assert.equal((await request(route, method, method === 'GET' ? undefined : {})).status, 404, route);
   assert.equal((await request('/api/sos-session', 'POST', { action: 'completed-flow' })).data.session.action, 'completed-flow');
   const saved = JSON.parse(fs.readFileSync(path.join(directory, 'store.json')));
-  assert.equal(saved.hydration[localDate()], 8);
+  assert.equal((await request('/api/hydration', 'POST', { cups: 8 })).status, 404);
   assert.ok(fs.existsSync(path.join(directory, 'store.json.bak')));
 });
 test('recursos inexistentes, rotas removidas e origens externas são rejeitados', async () => {

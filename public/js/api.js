@@ -23,7 +23,6 @@ export const endpoints = {
   profile: body => api('/api/profile', { method: 'PUT', body: JSON.stringify(body) }),
   money: body => api('/api/money', { method: 'PUT', body: JSON.stringify(body) }),
   checkin: body => api('/api/checkin', { method: 'POST', body: JSON.stringify(body) }),
-  hydration: body => api('/api/hydration', { method: 'POST', body: JSON.stringify(body) }),
   sos: body => api('/api/sos-session', { method: 'POST', body: JSON.stringify(body) }),
   journey: body => api('/api/journey', { method: 'POST', body: JSON.stringify(body) }),
   situation: (id, body) => api(`/api/situations/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) })

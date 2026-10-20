@@ -130,6 +130,49 @@ export const sosView = {
     });
     const unlock = () => { const next = $('#sos-next'); if (next) next.disabled = false; };
 
+    // Tela inicial do SOS: "Respire fundo" abre o passo a passo; "Me distrair um pouco" mostra ideias.
+    const header = $('.sos-focus-top');
+    const DISTRACTIONS = [
+      ['Caminhar 10 minutos', 'Saia de casa ou ande pelo quarteirão.'],
+      ['Tomar um banho', 'Água fria ou morna ajuda a mudar o estado do corpo.'],
+      ['Ligar para alguém', 'Uma conversa curta já tira a cabeça da vontade.'],
+      ['Comer algo gostoso', 'Fome aumenta a vontade. Um lanche ajuda.'],
+      ['Ver um episódio', 'Escolha algo leve e fique até o fim.'],
+      ['Arrumar alguma coisa', 'Uma gaveta, a pia, a mesa: mãos ocupadas, mente ocupada.']
+    ];
+    const renderLanding = () => {
+      stop();
+      state.step = -1;
+      markProgress();
+      header.hidden = true;
+      stage.innerHTML = `
+        <div class="sos-landing">
+          <h1>Modo SOS</h1>
+          <p class="sos-landing-sub">A vontade de beber pode passar.<br>Você não está sozinho nessa jornada!</p>
+          <section class="sos-breathe-card">
+            <svg viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="#1d6b48" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10h24l-3 30a3 3 0 0 1-3 3H18a3 3 0 0 1-3-3Z"/><path d="M14 20h20"/><path d="M8 8l32 32"/></g></svg>
+            <div><strong>Fazer a vontade passar</strong><span>Um passo a passo de poucos minutos: respire, observe e deixe a vontade ir embora.</span></div>
+            <button type="button" id="sos-begin">Começar ›</button>
+          </section>
+          <h2 class="sos-need">O que você precisa agora?</h2>
+          <p class="sos-need-sub">Escolha uma opção:</p>
+          <button type="button" class="sos-option" id="sos-distract" aria-expanded="false">
+            <span class="sos-option-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></svg></span>
+            <span class="sos-option-copy"><strong>Me distrair um pouco</strong><small>Sugestões de atividades para ocupar a mente.</small></span>
+            <span class="sos-option-arrow" aria-hidden="true">›</span>
+          </button>
+          <div class="sos-distractions" id="sos-distractions" hidden>
+            ${DISTRACTIONS.map(([title, text]) => `<div><strong>${title}</strong><span>${text}</span></div>`).join('')}
+          </div>
+        </div>`;
+      $('#sos-begin').addEventListener('click', () => { header.hidden = false; renderIntro(); });
+      $('#sos-distract').addEventListener('click', () => {
+        const list = $('#sos-distractions'), open = list.hidden;
+        list.hidden = !open; $('#sos-distract').setAttribute('aria-expanded', String(open));
+        $('#sos-distract').classList.toggle('open', open);
+      });
+    };
+
     const renderIntro = () => {
       state.before = null;
       stage.innerHTML = `
@@ -312,7 +355,7 @@ export const sosView = {
             <button type="button" class="sos-next" id="sos-go-routine">Ir para meu plano</button>
           </div>
         </div>`;
-      $('#sos-again').addEventListener('click', () => { state.step = -1; markProgress(); renderIntro(); });
+      $('#sos-again').addEventListener('click', () => { header.hidden = false; state.step = -1; markProgress(); renderIntro(); });
       $('#sos-go-routine').addEventListener('click', () => ctx.navigate('rotina'));
     };
 
@@ -327,13 +370,10 @@ export const sosView = {
     cancelBtn.addEventListener('click', async () => {
       const step = state.step;
       stop();
-      state.step = -1;
-      markProgress();
-      renderIntro();
+      renderLanding();
       if (step >= 0 && step < STEPS.length) await save(`cancelado etapa:${step + 1}`);
     });
 
-    markProgress();
-    renderIntro();
+    renderLanding();
   }
 };

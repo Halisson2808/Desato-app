@@ -33,7 +33,6 @@ test('todas as gravações usam o proprietário verificado e operações especí
     ['/api/profile','PUT',{ name: 'Ana', user_id: 'bob' }],
     ['/api/money','PUT',{ spendPerOuting: 80, outingsPerWeek: 2, user_id: 'bob' }],
     ['/api/checkin','POST',{ status: 'clean', date: '2026-10-06', note: '' }],
-    ['/api/hydration','POST',{ cups: 2, date: '2026-10-06' }],
     ['/api/sos-session','POST',{ intensity: 3, action: 'completed-flow' }],
     ['/api/situations/festa','PUT',{ drink: 'Água', refuse: 'Hoje não', leaveAt: '22h' }]
   ];
@@ -54,7 +53,6 @@ test('estado converte registros do banco e pagina históricos com mais de mil di
       const offset = Number(parsed.searchParams.get('offset'));
       return response(Array.from({ length: offset === 0 ? 1000 : 1 }, (_, index) => ({ day: String(offset + index), status: 'clean', note: '' })));
     }
-    if (table === 'hydration') return response([{ day: '2026-10-06', cups: 4 }]);
     if (table === 'situation_plans') return response([{ situation_id: 'festa', drink: 'Água', refuse: 'Hoje não', leave_at: '22h', updated_at: 'agora' }]);
     assert.ok(!['routine_tasks', 'routine_completions', 'groceries', 'recipe_favorites', 'support_plans', 'support_favorites', 'quiz_answers'].includes(table), table);
     return response([]);
@@ -63,7 +61,6 @@ test('estado converte registros do banco e pagina históricos com mais de mil di
   assert.equal(store.profile.email, bob.user.email);
   assert.equal(store.money.spendPerOuting, 80);
   assert.equal(Object.keys(store.checkins).length, 1001);
-  assert.equal(store.hydration['2026-10-06'], 4);
   assert.equal(store.situations.festa.leaveAt, '22h');
 });
 
@@ -72,7 +69,6 @@ test('entrada inválida não chega ao banco e erros SQL não vazam dados pessoai
   const cloud = createCloud({ url: 'https://example.test', key: 'public', fetchImpl: async () => { calls++; return response({ message: 'SQL com dados privados' }, 400); } });
   for (const [route, method, body] of [
     ['/api/checkin','POST',{ status: 'bad' }],
-    ['/api/hydration','POST',{ cups: 9 }],
     ['/api/profile','PUT',{ email: 'bob@example.test' }],
     ['/api/situations/festa','PUT',{ drink: ' ', refuse: 'a', leaveAt: 'b' }],
     ['/api/situations/missing','PUT',{ drink: 'a', refuse: 'b', leaveAt: 'c' }],

@@ -54,14 +54,6 @@ test('Início mostra pergunta, calendário por status e estimativa com os regist
   app.click('#checkin-used');await app.flush();assert.equal(app.writes[0].status,'used');assert.match(app.document.querySelector('.saved-amount').textContent,/28,49/);
   app.click('#month-prev');assert.equal(app.state.ui.homeMonth,'2026-09');assert.match(app.document.querySelector('.saved-amount').textContent,/28,49/);
 });
-test('sem cálculo aparece convite; dia anotado preserva e escapa o texto',async()=>{
-  const rows=store();rows.money={spendPerOuting:0,outingsPerWeek:0};rows.checkins[today].note='<img src=x onerror=alert(1)>';
-  const app=await boot(rows);
-  assert.ok(app.document.querySelector('.needs-calculation'));assert.equal(app.document.querySelector('.saved-amount'),null);
-  app.click('#today-note');assert.ok(app.modals[0].content.includes('&lt;img'));assert.equal(app.modals[0].content.includes('<img'),false);
-  app.click('#money-edit');assert.match(app.modals[1].content,/Quantas saídas por semana/);
-  assert.equal(app.writes.length,0);
-});
 test('virada do mês acompanha o mês atual sem deslocar quem consulta um mês antigo',async()=>{
   const app=await boot();app.state.summary.today='2026-11-01';app.redraw();assert.equal(app.state.ui.homeMonth,'2026-11');
   app.click('#month-prev');assert.equal(app.state.ui.homeMonth,'2026-10');

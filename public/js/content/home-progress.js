@@ -53,3 +53,17 @@ export function sosStats(sessions=[],today,days=30) {
   return {total:recent.length,completed:drops.length,avgDrop:drops.length?drops.reduce((a,b)=>a+b,0)/drops.length:0};
 }
 export const weekdayLabels=['D','S','T','Q','Q','S','S'];
+
+// Sequência atual de dias registrados sem beber (hoje conta se já tiver registro).
+export function cleanStreak(checkins = {}, today) {
+  const toISO = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const [y, m, d] = today.split('-').map(Number);
+  const cursor = new Date(y, m - 1, d, 12);
+  if (!checkins[today]) cursor.setDate(cursor.getDate() - 1);
+  let streak = 0;
+  while (checkins[toISO(cursor)]?.status === 'clean') {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}

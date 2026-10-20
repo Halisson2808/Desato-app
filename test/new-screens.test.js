@@ -23,7 +23,7 @@ async function boot(file, name, store) {
     endpoints: {
       journey: async body => { writes.push(body); store.journey[body.day] = { answer: body.answer, completedAt: `${today}T15:00:00` }; },
       situation: async (id, body) => { writes.push({ id, ...body }); store.situations[id] = body; },
-      hydration: async body => { writes.push(body); store.hydration[body.date] = body.cups; }
+      checkin: async body => { writes.push(body); }
     },
     mutate: async action => { await action(); render(); return true; },
     openModal: modal => { document.querySelector('#modal').innerHTML = modal.content; modal.onOpen({ close: () => { document.querySelector('#modal').innerHTML = ''; } }); }
@@ -83,18 +83,6 @@ test('situações salvam três respostas e abrem o plano na hora', async () => {
   assert.ok(app.document.querySelector('#modal').textContent.includes('Antes da meia-noite'));
   app.click('#now-sos');
   assert.deepEqual(app.routes, ['sos']);
-});
-
-test('corpo e saúde mostra sequência, próximo marco e marca água', async () => {
-  const store = { checkins: { '2026-10-08': { status: 'used' }, '2026-10-09': { status: 'clean' }, '2026-10-10': { status: 'clean' }, '2026-10-11': { status: 'clean' } }, hydration: {} };
-  const app = await boot('public/js/views/food.js', 'foodView', store);
-  const hero = app.document.querySelector('.body-hero').textContent;
-  assert.ok(hero.includes('3 dias sem beber'));
-  assert.ok(hero.includes('4 dias'));
-  assert.equal(app.document.querySelectorAll('.body-timeline li.done').length, 2);
-  app.click('[data-cup="3"]'); await app.flush();
-  assert.deepEqual(JSON.parse(JSON.stringify(app.writes)), [{ date: today, cups: 3 }]);
-  assert.ok(!app.document.body.textContent.includes('Receita'));
 });
 
 test('análises do início: semana, dias da semana e SOS', async () => {

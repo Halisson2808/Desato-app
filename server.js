@@ -77,7 +77,6 @@ function defaultStore() {
       currency: 'BRL'
     },
     checkins,
-    hydration: {},
     sos: {
       sessions: []
     },
@@ -94,7 +93,7 @@ function ensureStore() {
   }
   const parsed = JSON.parse(fs.readFileSync(STORE_FILE, 'utf8'));
   if (!parsed || !parsed.profile || !parsed.money || !parsed.checkins ||
-      !parsed.hydration || !Array.isArray(parsed.sos?.sessions)) {
+      !Array.isArray(parsed.sos?.sessions)) {
     throw new Error('Arquivo de dados inválido. Restaure uma cópia válida; o original foi preservado.');
   }
 }
@@ -336,14 +335,6 @@ async function handleApi(req, res, pathname) {
     store.checkins[date] = { status, note: String(body.note || '').slice(0, 500) };
     writeStore(store);
     return json(res, 200, { checkin: store.checkins[date], date, summary: summary(store) });
-  }
-
-  if (pathname === '/api/hydration' && method === 'POST') {
-    const date = validDate(body.date ?? localISO());
-    const next = finiteNumber(body.cups, 0, 8, 'Quantidade de copos', true);
-    store.hydration[date] = next;
-    writeStore(store);
-    return json(res, 200, { date, cups: next });
   }
 
   if (pathname === '/api/sos-session' && method === 'POST') {

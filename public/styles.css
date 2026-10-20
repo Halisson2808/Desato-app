@@ -1051,3 +1051,65 @@ button:disabled { cursor: default; opacity: .65; }
 .sos-done-check { background: var(--primary) !important; color: #fff !important; }
 .sos-footnote { color: var(--muted) !important; }
 .sos-admin-skip { color: #8a5d0b !important; border-color: #e5c27a !important; }
+/* Selo do SOS não encolhe nem é cortado */
+.sos-focus { overflow: visible !important; }
+.sos-title { min-width: 0; }
+.sos-badge { flex: 0 0 54px !important; width: 54px !important; height: 54px !important; }
+/* Destaque principal do Início: "Você bebeu hoje?" */
+.today-question.today-hero { background: #fff; color: var(--text); border: 1px solid #e3ece6; border-radius: 26px; padding: 22px 18px 20px; text-align: center; box-shadow: 0 14px 36px rgba(20,88,59,.08); display: grid; justify-items: center; gap: 4px; }
+.today-beer { width: 112px; height: 112px; margin-bottom: 4px; }
+.today-hero h3 { margin: 4px 0 2px; font-size: clamp(28px, 7vw, 34px); line-height: 1.15; letter-spacing: -.9px; color: #17362f; }
+.today-sub { margin: 0 auto 14px; max-width: 290px; font-size: 14px; line-height: 1.5; color: #5f7268; }
+.today-hero .today-answers { width: 100%; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 0; }
+.today-hero .today-answer { min-height: 56px; border-radius: 16px; font-size: 15px; font-weight: 700; gap: 8px; padding: 10px 8px; }
+.today-hero .answer-icon svg { width: 22px; height: 22px; display: block; }
+.today-hero .today-answer.answer-clean { background: #fff; color: #1d4d33; border: 2px solid #1d6b48; }
+.today-hero .today-answer.answer-clean.is-selected { background: #d6eccf; border-color: #1d6b48; }
+.today-hero .today-answer.answer-used { background: #0d5c3b; color: #fff; border: 2px solid #0d5c3b; }
+.today-hero .today-answer.answer-used.is-selected { background: #8a2b25; border-color: #8a2b25; }
+.today-hero .today-answer.is-selected { box-shadow: 0 0 0 3px rgba(29,107,72,.18); }
+/* Card "Você bebeu hoje?": fundo verde fraco, texto legível, verde = não bebi, vermelho = bebi */
+.today-question.today-hero { background: #eef7ea; border-color: #d5e8cf; }
+.today-hero .today-sub { color: #3f5a4a; }
+.today-hero .today-answer.answer-clean { background: #2f8a55; color: #fff; border-color: #2f8a55; }
+.today-hero .today-answer.answer-clean.is-selected { background: #1d6b48; border-color: #1d6b48; box-shadow: 0 0 0 3px rgba(47,138,85,.25); }
+.today-hero .today-answer.answer-used { background: #d64545; color: #fff; border-color: #d64545; }
+.today-hero .today-answer.answer-used.is-selected { background: #a83232; border-color: #a83232; box-shadow: 0 0 0 3px rgba(214,69,69,.25); }
+/* Pop-up de um dia do calendário: duas respostas */
+.day-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+.day-choice-btn { min-height: 56px; border-radius: 16px; border: 2px solid transparent; color: #fff; font-size: 16px; font-weight: 800; cursor: pointer; }
+.day-choice-btn.clean { background: #2f8a55; }
+.day-choice-btn.used { background: #d64545; }
+.day-choice-btn.is-selected { box-shadow: 0 0 0 3px rgba(23,54,47,.18); border-color: #17362f; }
+/* Pop-up centralizado (dias do calendário), também no celular */
+.modal-backdrop.modal-centered { align-items: center; padding: 20px; }
+.modal-centered .modal { width: min(100%, 380px); border-radius: 24px; padding: 20px; padding-bottom: 20px; animation: popin .18s ease-out; }
+.modal-centered .modal-grabber { display: none; }
+@keyframes popin { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+/* Botões de resposta: o não escolhido fica um pouco apagado */
+.today-hero .today-answers:has(.is-selected) .today-answer:not(.is-selected),
+.day-choice:has(.is-selected) .day-choice-btn:not(.is-selected) { opacity: .55; }
+
+/* SOS: tela inicial */
+.sos-landing { display: grid; justify-items: center; text-align: center; gap: 6px; padding-top: 4px; }
+.sos-buoy { width: 104px; height: 104px; }
+.sos-landing h1 { margin: 2px 0 0; font-size: 38px; letter-spacing: -1px; color: #1d4d33; }
+.sos-landing-sub { margin: 0 0 14px; font-size: 16px; line-height: 1.5; color: #3f5a4a; }
+.sos-breathe-card { width: 100%; display: grid; grid-template-columns: 52px minmax(0,1fr) auto; align-items: center; gap: 12px; text-align: left; padding: 16px; border-radius: 20px; background: #eef7ea; border: 1px solid #d5e8cf; }
+.sos-breathe-card svg { width: 48px; height: 48px; }
+.sos-breathe-card strong { display: block; font-size: 19px; color: #1d4d33; }
+.sos-breathe-card span { display: block; font-size: 13px; line-height: 1.45; color: #4f6f58; margin-top: 3px; }
+.sos-breathe-card button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 99px; background: #0d5c3b; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.sos-need { margin: 22px 0 0; font-size: 21px; color: #1d4d33; }
+.sos-need-sub { margin: 0 0 8px; font-size: 14px; color: #5f7268; }
+.sos-option { width: 100%; display: grid; grid-template-columns: 48px minmax(0,1fr) auto; align-items: center; gap: 12px; text-align: left; padding: 14px 16px; border-radius: 18px; border: 1px solid #e3ece6; background: #fff; cursor: pointer; color: var(--text); }
+.sos-option-icon { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: #eef7ea; color: #1d6b48; }
+.sos-option-icon svg { width: 24px; height: 24px; }
+.sos-option-copy strong { display: block; font-size: 16px; color: #1d4d33; }
+.sos-option-copy small { display: block; font-size: 13px; color: #5f7268; margin-top: 2px; }
+.sos-option-arrow { font-size: 26px; color: #1d4d33; transition: transform .2s; }
+.sos-option.open .sos-option-arrow { transform: rotate(90deg); }
+.sos-distractions { width: 100%; display: grid; gap: 8px; text-align: left; }
+.sos-distractions div { padding: 12px 16px; border-radius: 14px; background: #f6faf4; border: 1px solid #e3ece6; }
+.sos-distractions strong { display: block; font-size: 15px; color: #1d4d33; }
+.sos-distractions span { display: block; font-size: 13px; color: #5f7268; margin-top: 2px; }
