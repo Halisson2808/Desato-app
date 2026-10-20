@@ -9,7 +9,7 @@ export const authView = {
       <h1 class="auth-center">Bem-vindo ao Desato</h1><p class="auth-subtitle auth-center">Digite o e-mail que você usou na compra para entrar.</p>
       <p id="auth-feedback" class="auth-feedback ${ctx.state.authFeedback ? '' : 'hidden'}" role="status">${escapeHtml(ctx.state.authFeedback || '')}</p>
       <form id="auth-form" novalidate>
-        <div class="field"><label for="auth-email">Seu e-mail</label><input id="auth-email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="254" value="${escapeHtml(ctx.email || '')}" placeholder="voce@exemplo.com" required></div>
+        <div class="field"><label for="auth-email">Seu e-mail</label><input id="auth-email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="254" placeholder="voce@exemplo.com" required></div>
         <button class="primary-btn auth-submit" type="submit" id="auth-submit">Entrar</button>
       </form>
       <div id="auth-no-purchase" class="auth-no-purchase" hidden>
@@ -33,7 +33,6 @@ export const authView = {
       const submit = $('#auth-submit'); submit.disabled = true; submit.textContent = 'Entrando…';
       try {
         await ctx.auth.emailLogin(email);
-        localStorage.setItem('desato-remember-email', email);
       } catch (error) {
         // Sem compra para este e-mail: mostra o aviso com o caminho para comprar.
         if (error.status === 403) { $('#auth-feedback').classList.add('hidden'); $('#auth-no-purchase').hidden = false; $('#auth-switch').hidden = true; }

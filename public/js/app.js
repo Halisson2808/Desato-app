@@ -232,7 +232,7 @@ function render() {
       $('#auth-retry')?.addEventListener('click', () => location.reload());
       return;
     }
-    const ctx = { state: appState, auth, email: localStorage.getItem('desato-remember-email') || '', showAuth, navigate: setRoute };
+    const ctx = { state: appState, auth, showAuth, navigate: setRoute };
     // Fora da conta, o endereço volta para a entrada (/).
     if (location.pathname !== '/') history.replaceState(null, '', '/');
     $('#view').innerHTML = authView.html(ctx); authView.bind(ctx); return;
@@ -286,6 +286,7 @@ window.addEventListener('hashchange', () => {
 
 if (location.hash.replace('#','') in routes) appState.route = location.hash.replace('#','');
 async function start() {
+  try { localStorage.removeItem('desato-remember-email'); } catch { /* sem armazenamento */ }
   render();
   try {
     const result = await initializeAuth((event, session) => {

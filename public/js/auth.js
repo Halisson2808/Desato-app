@@ -6,11 +6,8 @@ export async function initializeAuth(onChange) {
   if (!response.ok) throw new Error('Não consegui carregar o login. Reinicie o servidor do Desato e tente novamente.');
   config = await response.json();
   if (config.mode === 'json') return { config, session: null };
-  // Por enquanto a sessão não fica salva no aparelho: a cada abertura a pessoa toca em Entrar
-  // com o e-mail já preenchido. Remove sessões salvas por versões anteriores.
-  try { localStorage.removeItem('desato-auth-session'); } catch { /* armazenamento indisponível */ }
   client = createClient(config.supabaseUrl, config.publishableKey, { auth: {
-    persistSession: false, autoRefreshToken: true, detectSessionInUrl: false,
+    persistSession: true, // a sessão fica salva: reabrir o /app entra direto autoRefreshToken: true, detectSessionInUrl: false,
     storageKey: 'desato-auth-session', flowType: 'pkce'
   } });
   client.auth.onAuthStateChange((event, session) => {
