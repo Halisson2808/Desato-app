@@ -24,8 +24,8 @@ const STORE_FILE = path.join(DATA_DIR, 'store.json');
 const { createFunnelStore } = require('./lib/funnel.cjs');
 const funnelStore = createFunnelStore({mode:STORAGE_MODE,url:SUPABASE_URL,key:SUPABASE_KEY,dataDir:DATA_DIR});
 const contentModule = (file) => import('data:text/javascript;base64,' + Buffer.from(fs.readFileSync(path.join(PUBLIC_DIR, file), 'utf8')).toString('base64'));
-const journeyModule = contentModule('js/content/journey.js');
 const situationsModule = contentModule('js/content/situations.js');
+const copingModule = contentModule('js/content/coping.js');
 const quizModule = import('data:text/javascript;base64,' + Buffer.from(fs.readFileSync(path.join(PUBLIC_DIR, 'js/quiz-model.js'), 'utf8')).toString('base64'));
 
 const mime = {
@@ -80,8 +80,8 @@ function defaultStore() {
     sos: {
       sessions: []
     },
-    journey: {},
-    situations: {}
+    situations: {},
+    plan: null
   };
 }
 
@@ -101,8 +101,8 @@ function ensureStore() {
 function readStore() {
   ensureStore();
   const store = JSON.parse(fs.readFileSync(STORE_FILE, 'utf8'));
-  if (!store.journey || typeof store.journey !== 'object' || Array.isArray(store.journey)) store.journey = {};
   if (!store.situations || typeof store.situations !== 'object' || Array.isArray(store.situations)) store.situations = {};
+  if (!store.plan || !Array.isArray(store.plan.tasks)) store.plan = null;
   return store;
 }
 
@@ -242,8 +242,8 @@ function summary(store) {
 }
 
 async function handleApi(req, res, pathname) {
-  const { JOURNEY_LENGTH } = await journeyModule;
   const { SITUATION_IDS } = await situationsModule;
+  const coping = await copingModule;
   const method = req.method || 'GET';
   const body = ['POST', 'PUT', 'PATCH'].includes(method) ? await readBody(req) : {};
   if (!body || Array.isArray(body) || typeof body !== 'object') invalid('Envie um objeto JSON.');
@@ -265,7 +265,7 @@ async function handleApi(req, res, pathname) {
       if (pathname === '/api/state') return json(res, 200, { store, summary: summary(store), admin });
       return json(res, 200, summary(store));
     }
-    await cloud.mutate(session, pathname, method, body, value => validDate(value ?? localISO()), { journeyLength: JOURNEY_LENGTH, situationIds: SITUATION_IDS });
+    await cloud.mutate(session, pathname, method, body, value => validDate(value ?? localISO()), { situationIds: SITUATION_IDS, coping });
     return json(res, 200, { ok: true });
   }
   let store = readStore();
@@ -279,14 +279,30 @@ async function handleApi(req, res, pathname) {
     return json(res, 200, summary(store));
   }
 
-  if (pathname === '/api/journey' && method === 'POST') {
-    const day = finiteNumber(body.day, 1, JOURNEY_LENGTH, 'Dia', true);
-    const answer = typeof body.answer === 'string' ? body.answer.trim() : '';
-    if (!answer || answer.length > 500) invalid('Escreva sua resposta (até 500 caracteres).');
-    if (day > 1 && !store.journey[day - 1]) invalid('Conclua o dia anterior primeiro.');
-    store.journey[day] = { answer, completedAt: store.journey[day]?.completedAt || new Date().toISOString() };
+  if (pathname === '/api/plan' && method === 'PUT') {
+    const { tasks, error } = coping.normalizeTasks(body.tasks);
+    if (error) invalid(error);
+    const old = store.plan || {};
+    // Trocar a lista recomeça a vez em andamento; a contagem de pulos de quem continua é mantida.
+    store.plan = { tasks, active: null, uses: old.uses || 0, wins: old.wins || 0, skips: Object.fromEntries(tasks.map(task => [task, old.skips?.[task] || 0])), updatedAt: new Date().toISOString() };
     writeStore(store);
-    return json(res, 200, { journey: store.journey });
+    return json(res, 200, { plan: store.plan });
+  }
+
+  if (pathname === '/api/plan/session' && method === 'PUT') {
+    if (!store.plan) invalid('Monte seu plano primeiro.');
+    const current = coping.activeSession(store.plan);
+    store.plan.active = { startedAt: current?.startedAt || new Date().toISOString(), done: coping.normalizeDone(body.done, store.plan.tasks) };
+    writeStore(store);
+    return json(res, 200, { plan: store.plan });
+  }
+
+  if (pathname === '/api/plan/finish' && method === 'POST') {
+    if (!store.plan) invalid('Monte seu plano primeiro.');
+    if (typeof body.passed !== 'boolean') invalid('Informe se a vontade passou.');
+    Object.assign(store.plan, coping.finishStats(store.plan, coping.normalizeDone(body.done, store.plan.tasks), body.passed));
+    writeStore(store);
+    return json(res, 200, { plan: store.plan });
   }
 
   if (/^\/api\/situations\/[^/]+$/.test(pathname) && method === 'PUT') {
@@ -354,7 +370,7 @@ async function handleApi(req, res, pathname) {
 }
 
 function serveStatic(req, res, pathname) {
-  let requested = pathname === '/' ? '/index.html' : /^\/page\/?$/.test(pathname) ? '/site.html' : /^\/quiz(?:\/|$)/.test(pathname) ? '/quiz.html' : /^\/app(?:\/|$)/.test(pathname) ? '/index.html' : pathname;
+  let requested = pathname === '/' ? '/quiz.html' : /^\/page\/?$/.test(pathname) ? '/site.html' : /^\/quiz(?:\/|$)/.test(pathname) ? '/quiz.html' : /^\/app(?:\/|$)/.test(pathname) ? '/index.html' : pathname;
   requested = decodeURIComponent(requested);
   const safe = path.normalize(requested).replace(/^([.][.][\/\\])+/, '');
   let filePath = path.join(PUBLIC_DIR, safe);

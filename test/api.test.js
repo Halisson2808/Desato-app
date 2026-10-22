@@ -112,7 +112,7 @@ test('logo e módulos das telas são servidos com tipos aceitos pelo navegador',
   assert.equal(logo.status, 200);
   assert.ok(logo.headers.get('content-type').startsWith('image/svg+xml'));
   assert.ok((await logo.text()).includes('<svg'));
-  for (const asset of ['/js/app.js', '/js/views/support.js', '/js/content/journey.js']) {
+  for (const asset of ['/js/app.js', '/js/views/support.js']) {
     const response = await fetch(base + asset);
     assert.equal(response.status, 200);
     assert.ok(response.headers.get('content-type').startsWith('application/javascript'), asset);
@@ -120,8 +120,8 @@ test('logo e módulos das telas são servidos com tipos aceitos pelo navegador',
   }
 });
 
-test('site, app e cinco rotas de quiz públicos servem as páginas corretas', async () => {
-  const pages = [['/', '/js/app.js'], ['/page', '/js/site.js'], ['/app','/js/app.js'], ...['consumo','vontade','gatilhos','impacto','retomada'].map(id => ['/quiz/'+id,'/js/quiz.js']), ['/quiz','/js/quiz.js']];
+test('raiz (quiz), site, app e cinco rotas de quiz públicos servem as páginas corretas', async () => {
+  const pages = [['/', '/js/quiz.js'], ['/page', '/js/site.js'], ['/app','/js/app.js'], ...['consumo','vontade','gatilhos','impacto','retomada'].map(id => ['/quiz/'+id,'/js/quiz.js']), ['/quiz','/js/quiz.js']];
   for (const [route,script] of pages) { const response = await fetch(base+route); assert.equal(response.status,200); assert.match(response.headers.get('content-type'),/text\/html/); assert.ok((await response.text()).includes(script)); }
 });
 test('funil local registra visitantes separados, rejeita token errado e não altera contas',async()=>{
@@ -135,20 +135,23 @@ test('funil local registra visitantes separados, rejeita token errado e não alt
   assert.deepEqual((await request('/api/state')).data.store,before);
 });
 
-test('jornada exige ordem e resposta; situações validam id e três respostas', async () => {
-  assert.equal((await request('/api/journey', 'POST', { day: 2, answer: 'Pular' })).status, 400);
-  assert.equal((await request('/api/journey', 'POST', { day: 1, answer: '   ' })).status, 400);
-  assert.equal((await request('/api/journey', 'POST', { day: 31, answer: 'Fora' })).status, 400);
-  const first = await request('/api/journey', 'POST', { day: 1, answer: 'Acordar bem' });
-  assert.equal(first.status, 200);
-  const completedAt = first.data.journey[1].completedAt;
-  assert.equal((await request('/api/journey', 'POST', { day: 1, answer: 'Editado' })).data.journey[1].completedAt, completedAt);
-  assert.equal((await request('/api/journey', 'POST', { day: 2, answer: 'Parar' })).status, 200);
+test('situações validam id e três respostas', async () => {
   assert.equal((await request('/api/situations/inexistente', 'PUT', { drink: 'a', refuse: 'b', leaveAt: 'c' })).status, 404);
   assert.equal((await request('/api/situations/festa', 'PUT', { drink: 'Água', refuse: '', leaveAt: '22h' })).status, 400);
   assert.equal((await request('/api/situations/festa', 'PUT', { drink: 'Água', refuse: 'Hoje não', leaveAt: '22h' })).status, 200);
   const { store } = (await request('/api/state')).data;
-  assert.equal(store.journey[1].answer, 'Editado');
-  assert.deepEqual(Object.keys(store.journey), ['1', '2']);
   assert.equal(store.situations.festa.refuse, 'Hoje não');
+});
+
+test('plano pessoal valida a lista, guarda a vez em andamento e conta pulos', async () => {
+  assert.equal((await request('/api/plan/session', 'PUT', { done: [] })).status, 400);
+  assert.equal((await request('/api/plan', 'PUT', { tasks: [] })).status, 400);
+  assert.equal((await request('/api/plan', 'PUT', { tasks: ['a', 'b', 'c', 'd', 'e', 'f'] })).status, 400);
+  assert.equal((await request('/api/plan', 'PUT', { tasks: ['Orar', 'Caminhar 15 minutos'] })).status, 200);
+  const started = await request('/api/plan/session', 'PUT', { done: ['Orar', 'Fora do plano'] });
+  assert.deepEqual(started.data.plan.active.done, ['Orar']);
+  assert.equal((await request('/api/plan/finish', 'POST', { done: ['Orar'] })).status, 400);
+  const { plan } = (await request('/api/plan/finish', 'POST', { passed: true, done: ['Orar'] })).data;
+  assert.equal(plan.active, null);
+  assert.deepEqual([plan.uses, plan.wins, plan.skips['Caminhar 15 minutos'], plan.skips.Orar], [1, 1, 1, 0]);
 });

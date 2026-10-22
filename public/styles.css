@@ -790,36 +790,7 @@ button:disabled { cursor: default; opacity: .65; }
 @media (min-width: 900px) { .insight-grid { grid-template-columns: repeat(2, 1fr); } }
 
 /* Jornada */
-.journey-screen, .situations-screen, .body-screen { display: grid; gap: 16px; }
-.journey-screen .screen-title, .situations-screen .screen-title, .body-screen .screen-title { margin-bottom: 0; }
-.journey-hero { border-radius: 24px; padding: 22px 20px; color: #fff; background: linear-gradient(150deg, #0a4f40, #12805f); box-shadow: var(--shadow); display: grid; gap: 10px; }
-.journey-progress-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; letter-spacing: .1em; color: rgba(255,255,255,.85); }
-.journey-track { height: 10px; border-radius: 99px; background: rgba(255,255,255,.18); overflow: hidden; }
-.journey-track span { display: block; height: 100%; border-radius: inherit; background: #7ee0bb; transition: width .5s; }
-.journey-hero h3 { margin: 8px 0 0; font-size: 23px; line-height: 1.25; letter-spacing: -.02em; }
-.journey-hero p { margin: 0; font-size: 14px; line-height: 1.5; color: rgba(255,255,255,.85); }
-.journey-start { justify-self: start; margin-top: 6px; border: 0; border-radius: 14px; padding: 13px 20px; min-height: 48px; background: #fff; color: var(--primary); font-size: 14px; font-weight: 800; cursor: pointer; }
-.journey-lesson { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 22px 20px; box-shadow: var(--shadow); display: grid; gap: 12px; scroll-margin-top: 80px; }
-.journey-lesson-head { display: flex; justify-content: space-between; align-items: center; }
-.journey-lesson-head span { font-size: 12px; font-weight: 800; letter-spacing: .1em; color: var(--primary-2); }
 .journey-close { width: 40px; height: 40px; flex: 0 0 auto; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--muted); font-size: 22px; cursor: pointer; }
-.journey-lesson h3 { margin: 0; font-size: 24px; line-height: 1.2; letter-spacing: -.02em; }
-.journey-lesson > p { margin: 0; font-size: 15px; line-height: 1.7; color: #34504a; }
-.journey-task { background: var(--primary-3); border-radius: 16px; padding: 14px 16px; }
-.journey-task strong { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--primary); }
-.journey-task p { margin: 6px 0 0; font-size: 15px; font-weight: 700; line-height: 1.5; color: var(--text); }
-.journey-question { font-size: 15px; font-weight: 750; margin-top: 4px; }
-.journey-lesson textarea { width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; font: inherit; font-size: 15px; background: var(--surface-2); resize: vertical; }
-.journey-week h4 { margin: 4px 0 10px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.journey-days { display: grid; gap: 8px; }
-.journey-day { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 14px 8px 8px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); text-align: left; font-size: 14px; color: var(--text); cursor: pointer; }
-.journey-day-number { width: 36px; height: 36px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 11px; background: var(--surface-2); font-weight: 800; font-size: 13px; }
-.journey-day.done .journey-day-number { background: var(--primary-3); color: var(--success); }
-.journey-day.current { border-color: var(--primary-2); box-shadow: 0 0 0 3px rgba(19,130,100,.14); font-weight: 750; }
-.journey-day.current .journey-day-number { background: var(--primary); color: #fff; }
-.journey-day.locked { opacity: .5; cursor: not-allowed; }
-.journey-day.open { background: var(--primary-3); }
-@media (min-width: 900px) { .journey-days { grid-template-columns: repeat(2, 1fr); } }
 
 /* Situações */
 .situation-grid { display: grid; gap: 12px; }
@@ -889,7 +860,7 @@ button:disabled { cursor: default; opacity: .65; }
 .body-tip-grid strong { font-size: 15px; }
 .body-tip-grid p { margin: 6px 0 0; font-size: 14px; line-height: 1.55; color: var(--muted); }
 @media (min-width: 900px) { .body-tip-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (prefers-reduced-motion: reduce) { .journey-track span, .water-cup span { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .water-cup span { transition: none; } }
 .sos-focus [hidden] { display: none !important; }
 
 /* SOS ocupa a tela inteira em modo foco, sem cartão flutuante */
@@ -1113,3 +1084,19 @@ button:disabled { cursor: default; opacity: .65; }
 .sos-distractions div { padding: 12px 16px; border-radius: 14px; background: #f6faf4; border: 1px solid #e3ece6; }
 .sos-distractions strong { display: block; font-size: 15px; color: #1d4d33; }
 .sos-distractions span { display: block; font-size: 13px; color: #5f7268; margin-top: 2px; }
+
+/* Plano pessoal */
+.plan-count { margin: 0; font-size: 13px; color: var(--muted); }
+.plan-count strong { color: var(--primary); font-size: 15px; }
+.plan-custom { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; }
+.plan-custom button { min-height: 48px; padding: 0 16px; border-radius: 14px; border: 1px solid var(--primary); background: transparent; color: var(--primary); font-weight: 800; cursor: pointer; }
+.plan-sos { margin-top: 4px; min-height: 44px; border: 1px solid rgba(255,255,255,.25); border-radius: 14px; background: transparent; color: #ffd6cf; font-size: 14px; font-weight: 700; cursor: pointer; }
+.plan-stats, .plan-hint { margin: 0; padding: 14px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
+.plan-stats { background: var(--primary-3); color: var(--text); }
+.plan-hint { background: #fdf3df; color: #6b4708; }
+.plan-tasks { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; counter-reset: task; }
+.plan-tasks li { counter-increment: task; display: flex; gap: 12px; align-items: center; min-height: 52px; padding: 8px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); font-size: 15px; font-weight: 650; overflow-wrap: anywhere; }
+.plan-tasks li::before { content: counter(task); width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 10px; background: var(--primary-3); color: var(--primary); font-weight: 800; font-size: 13px; }
+.ritual-alt { min-height: 50px; border: 1px solid rgba(255,255,255,.25); border-radius: 16px; background: transparent; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
+
+img[src="/logo.png"], img[src="/favicon.png"] { border-radius: 22%; }

@@ -36,7 +36,7 @@ test('todas as gravações usam o proprietário verificado e operações especí
     ['/api/sos-session','POST',{ intensity: 3, action: 'completed-flow' }],
     ['/api/situations/festa','PUT',{ drink: 'Água', refuse: 'Hoje não', leaveAt: '22h' }]
   ];
-  for (const [route, method, body] of mutations) await cloud.mutate(alice, route, method, body, date, { journeyLength: 30, situationIds: ['festa'] });
+  for (const [route, method, body] of mutations) await cloud.mutate(alice, route, method, body, date, { situationIds: ['festa'] });
   assert.equal(writes.length, mutations.length);
   for (const route of ['/api/groceries', '/api/routine/tasks', '/api/support/plan']) await assert.rejects(cloud.mutate(alice, route, 'POST', {}, date, {}), error => error.status === 404);
   assert.ok(writes.every(write => !write.body || !('checkins' in write.body)));
@@ -73,7 +73,7 @@ test('entrada inválida não chega ao banco e erros SQL não vazam dados pessoai
     ['/api/situations/festa','PUT',{ drink: ' ', refuse: 'a', leaveAt: 'b' }],
     ['/api/situations/missing','PUT',{ drink: 'a', refuse: 'b', leaveAt: 'c' }],
     ['/api/journey','POST',{ day: 31, answer: 'x' }]
-  ]) await assert.rejects(cloud.mutate(alice, route, method, body, date, { journeyLength: 30, situationIds: ['festa'] }));
+  ]) await assert.rejects(cloud.mutate(alice, route, method, body, date, { situationIds: ['festa'] }));
   assert.equal(calls, 0);
   await assert.rejects(cloud.mutate(alice, '/api/checkin', 'POST', { status: 'clean' }, date, {}), error => error.status === 400 && !error.message.includes('privados'));
 });

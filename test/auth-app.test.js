@@ -16,7 +16,7 @@ async function boot(session = null, recovery = false, search = '') {
   const redirects = [];
   const store = id => ({ profile: { name: id === 'alice' ? 'Alice' : 'Bob', email: `${id}@example.test`, startDate: '2026-10-06', goal: '' }, money: { spendPerOuting: 0, outingsPerWeek: 0 }, checkins: {}, routine: { tasks: [], completions: {} }, hydration: {}, groceries: [], sos: { sessions: [] }, support: { plan: null, favoriteGuideIds: [] } });
   const context = vm.createContext({ document, localStorage: storage, sessionStorage: storage, URLSearchParams, URL, console,
-    location: { origin: 'http://localhost:4173', hash: '', search, reload() {}, assign: value => redirects.push(value) },
+    location: { origin: 'http://localhost:4173', pathname: '/app', hash: '', search, reload() {}, assign: value => redirects.push(value) },
     history: { replaceState() {} }, window: { scrollTo() {}, addEventListener() {} }, navigator: {},
     setTimeout: fn => { timers.push(fn); return 1; }, setInterval() {},
     __init: async onChange => { listeners.push(onChange); return { config: { mode: 'supabase' }, session: active, recovery }; },
@@ -63,7 +63,7 @@ test('login solicitado pelo quiz volta ao resultado após restaurar ou iniciar s
 test('sessão restaurada abre painel; sair e trocar conta não reutiliza dados', async () => {
   const app = await boot({ user: { id: 'alice' }, access_token: 'token-alice' });
   assert.equal(app.document.querySelector('#app').classList.contains('auth-shell'), false);
-  app.click('#header-profile');
+  app.click('[data-route="perfil"]');
   assert.ok(app.document.querySelector('#view').textContent.includes('Alice'));
   app.setSession(null); app.listeners[0]('SIGNED_OUT', null);
   await app.flush();
@@ -72,7 +72,7 @@ test('sessão restaurada abre painel; sair e trocar conta não reutiliza dados',
   app.setSession({ user: { id: 'bob' }, access_token: 'token-bob' });
   app.listeners[0]('SIGNED_IN', { user: { id: 'bob' }, access_token: 'token-bob' });
   await app.flush(); await app.flush();
-  app.click('#header-profile');
+  app.click('[data-route="perfil"]');
   assert.ok(app.document.querySelector('#view').textContent.includes('Bob'));
   assert.equal(app.document.querySelector('#view').textContent.includes('Alice'), false);
 });
@@ -90,7 +90,7 @@ test('formulário envia só o e-mail, valida o formato e mostra o erro do servid
   assert.match(app.document.querySelector('#auth-feedback').textContent, /Não encontramos uma compra/);
   await submit('  Alice@Example.test ');
   assert.deepEqual(sent, ['sem-compra@example.test', 'alice@example.test']);
-  assert.equal(app.entries.get('desato-remember-email'), 'alice@example.test');
+  assert.equal(app.entries.has('desato-remember-email'), false);
 });
 
 test('e-mail sem compra mostra o aviso com o caminho para comprar; outros erros não', async () => {

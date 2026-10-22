@@ -5,7 +5,7 @@ import { authMessage } from '../auth.js';
 export const authView = {
   html(ctx) {
     return `<section class="auth-layout"><div class="auth-card">
-      <div class="auth-brand auth-brand-center"><img src="/icon.svg" width="46" height="46" alt=""><strong>Desato</strong></div>
+      <div class="auth-brand auth-brand-center"><img src="/logo.png" width="46" height="46" alt=""><strong>Desato</strong></div>
       <h1 class="auth-center">Bem-vindo ao Desato</h1><p class="auth-subtitle auth-center">Digite o e-mail que você usou na compra para entrar.</p>
       <p id="auth-feedback" class="auth-feedback ${ctx.state.authFeedback ? '' : 'hidden'}" role="status">${escapeHtml(ctx.state.authFeedback || '')}</p>
       <form id="auth-form" novalidate>

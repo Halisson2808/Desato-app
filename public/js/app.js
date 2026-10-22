@@ -3,7 +3,6 @@ import { authView } from './views/auth.js';
 import { endpoints, setAccountId } from './api.js';
 import { $, $$, escapeHtml } from './utils.js';
 import { homeView } from './views/home.js';
-import { routineView } from './views/routine.js';
 import { sosView } from './views/sos.js';
 import { profileView } from './views/profile.js';
 import { supportView } from './views/support.js';
@@ -15,7 +14,6 @@ export const APP_NAME = 'Desato';
 
 const routes = {
   inicio: homeView,
-  rotina: routineView,
   sos: sosView,
   apoio: supportView,
   plano: planView,
@@ -27,7 +25,6 @@ function icon(name, className = '') {
   const paths = {
     logo: `<path d="M5 15c4.5-.8 7.6-3.7 9.1-8.7 3.2 3.2 4.7 7.2 2.5 10.2-2 2.8-6 3.8-10.2 2.2 3.7-.2 6.8-1.8 8.5-4.5-2.7 1.8-5.8 2.2-9.9.8Z"/><path d="M14.2 7.1c.8-1.4 2.3-2.3 4.3-2.6"/>`,
     home: `<path d="m3 10 9-7 9 7"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/>`,
-    routine: `<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>`,
     sos: `<path d="M12 3a8 8 0 1 0 8 8c0-4.4-3.6-8-8-8Z"/><path d="M12 7v5"/><path d="M12 16h.01"/>`,
     support: `<path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/>`,
     plan: `<path d="M9 4h6a2 2 0 0 1 2 2v14l-5-3-5 3V6a2 2 0 0 1 2-2Z"/><path d="M10 9h4"/>`,
@@ -39,7 +36,6 @@ function icon(name, className = '') {
 const navItems = [
   ['inicio', 'home', 'Início'],
   ['plano', 'plan', 'Plano'],
-  ['rotina', 'routine', 'Jornada'],
   ['sos', 'sos', 'SOS'],
   ['perfil', 'profile', 'Perfil']
 ];
@@ -78,7 +74,7 @@ function renderHeader() {
   $('#app-header').innerHTML = `
     <div class="header-row">
       <button class="desato-brand" id="header-home" aria-label="Desato — ir para o início">
-        <img class="desato-brand-mark" src="/icon.svg" width="40" height="40" alt="" aria-hidden="true">
+        <img class="desato-brand-mark" src="/favicon.png" width="40" height="40" alt="" aria-hidden="true">
         <span class="desato-wordmark">${APP_NAME}<small class="desato-wordmark-app">App</small></span>
       </button>
     </div>
@@ -89,7 +85,7 @@ function renderHeader() {
 function renderNav() {
   $('#bottom-nav').innerHTML = `
     <div class="sidebar-brand" aria-label="${APP_NAME}">
-      <img class="sidebar-logo desato-sidebar-mark" src="/icon.svg" width="42" height="42" alt="" aria-hidden="true">
+      <img class="sidebar-logo desato-sidebar-mark" src="/favicon.png" width="42" height="42" alt="" aria-hidden="true">
       <div><strong>${APP_NAME}</strong></div>
     </div>
     <div class="nav-list">
@@ -223,13 +219,13 @@ function render() {
   if (loginVisible) {
     $('#app-header').innerHTML = ''; $('#bottom-nav').innerHTML = '';
     if (!appState.authReady) {
-      $('#view').innerHTML = `<div class="auth-loading"><img src="/icon.svg" width="48" height="48" alt="Desato"><p>${escapeHtml(appState.error || 'Preparando seu acesso…')}</p>${appState.error ? '<button class="primary-btn" id="auth-retry">Tentar novamente</button>' : ''}</div>`;
+      $('#view').innerHTML = `<div class="auth-loading"><img src="/logo.png" width="48" height="48" alt="Desato"><p>${escapeHtml(appState.error || 'Preparando seu acesso…')}</p>${appState.error ? '<button class="primary-btn" id="auth-retry">Tentar novamente</button>' : ''}</div>`;
       $('#auth-retry')?.addEventListener('click', () => location.reload());
       return;
     }
     const ctx = { state: appState, auth, showAuth, navigate: setRoute };
-    // Fora da conta, o endereço volta para a entrada (/).
-    if (location.pathname !== '/') history.replaceState(null, '', '/');
+    // Fora da conta, o endereço fica em /app (a raiz é o quiz).
+    if (location.pathname !== '/app') history.replaceState(null, '', '/app');
     $('#view').innerHTML = authView.html(ctx); authView.bind(ctx); return;
   }
   // Dentro da conta, o endereço fica em /app.
@@ -291,7 +287,7 @@ async function start() {
       accountGeneration += 1;
       appState.store = null; appState.summary = null; appState.error = null; appState.admin = false;
       appState.authUser = session?.user || null; setAccountId(session?.user?.id); appState.loading = Boolean(session);
-      appState.ui.journeyDay = null; appState.ui.situationId = null; appState.ui.situationDraft = null;
+      appState.ui.situationId = null; appState.ui.situationDraft = null;
       if (!session) { appState.route = 'inicio'; appState.authMode = 'login'; closeActiveModal?.(); $('#modal-root').innerHTML = ''; $('#toast-root').innerHTML = ''; $('#app').inert = false; render(); }
       else { if (returnToQuiz) { location.assign('/quiz?retomar=1'); return; } appState.authMode = 'login'; appState.route = 'inicio'; refresh(false); }
     });

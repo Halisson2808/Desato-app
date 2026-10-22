@@ -162,7 +162,7 @@ test('transição conta no progresso, sem detalhar perguntas; oferta mostra bene
   app.event('#see-offer');
   const html=app.document.querySelector('.offer-screen').innerHTML;
   assert.ok(html.indexOf('benefit-list')<html.indexOf('offer-price'));
-  for(const benefit of ['SOS','Jornada de 30 dias','Plano para situações difíceis','Corpo e saúde'])assert.match(app.document.querySelector('.offer-screen').textContent,new RegExp(benefit));
+  for(const benefit of ['SOS','Seu plano para a vontade','Plano para situações difíceis','Corpo e saúde'])assert.match(app.document.querySelector('.offer-screen').textContent,new RegExp(benefit));
   assert.match(app.document.querySelector('.value-compare').textContent,/100,00/);
   assert.equal(app.document.querySelectorAll('a').length,1);
   assert.ok(app.document.querySelector('#sticky-checkout'));

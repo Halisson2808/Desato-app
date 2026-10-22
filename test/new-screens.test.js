@@ -21,7 +21,6 @@ async function boot(file, name, store) {
   const ctx = {
     state, toast: message => messages.push(message), navigate: route => routes.push(route), redraw: () => render(),
     endpoints: {
-      journey: async body => { writes.push(body); store.journey[body.day] = { answer: body.answer, completedAt: `${today}T15:00:00` }; },
       situation: async (id, body) => { writes.push({ id, ...body }); store.situations[id] = body; },
       checkin: async body => { writes.push(body); }
     },
@@ -34,36 +33,6 @@ async function boot(file, name, store) {
   const flush = () => new Promise(resolve => setImmediate(resolve));
   return { document, state, writes, messages, routes, click, flush };
 }
-
-test('jornada libera um dia por vez e só no dia seguinte', async () => {
-  const { journeyStatus, JOURNEY } = await load('public/js/content/journey.js');
-  assert.equal(JOURNEY.length, 30);
-  assert.deepEqual(JOURNEY.map(item => item.day), Array.from({ length: 30 }, (_, i) => i + 1));
-  assert.ok(JOURNEY.every(item => item.lesson.length && item.task && item.question));
-  assert.deepEqual(journeyStatus({}, today), { completed: 0, current: 1, finished: false, waiting: false, percent: 0 });
-  const doneToday = { 1: { completedAt: '2026-10-10T12:00:00' }, 2: { completedAt: `${today}T12:00:00` } };
-  assert.equal(journeyStatus(doneToday, today).waiting, true);
-  assert.equal(journeyStatus(doneToday, '2026-10-12').waiting, false);
-  assert.equal(journeyStatus(doneToday, '2026-10-12').current, 3);
-  assert.equal(journeyStatus({ 2: { completedAt: '2026-10-01T12:00:00' } }, today).completed, 0);
-});
-
-test('tela da jornada exige resposta, conclui o dia e bloqueia o seguinte', async () => {
-  const store = { journey: {} };
-  const app = await boot('public/js/views/routine.js', 'routineView', store);
-  assert.equal(app.document.querySelectorAll('.journey-day.locked').length, 29);
-  app.click('.journey-start');
-  assert.ok(app.document.querySelector('#journey-lesson').textContent.includes('Por que você quer mudar?'));
-  app.click('#journey-save');
-  assert.equal(app.writes.length, 0);
-  app.document.querySelector('#journey-answer').value = 'Quero acordar bem <b>';
-  app.click('#journey-save'); await app.flush();
-  assert.deepEqual(JSON.parse(JSON.stringify(app.writes)), [{ day: 1, answer: 'Quero acordar bem <b>' }]);
-  assert.ok(app.document.querySelector('.journey-hero').textContent.includes('abre amanhã'));
-  assert.equal(app.document.querySelector('[data-open-day="2"]').disabled, true);
-  app.click('[data-open-day="1"]');
-  assert.ok(app.document.querySelector('#journey-answer').innerHTML.includes('&lt;b&gt;'));
-});
 
 test('situações salvam três respostas e abrem o plano na hora', async () => {
   const store = { situations: {} };

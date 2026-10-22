@@ -1,146 +1,152 @@
 import { $, $$, escapeHtml } from '../utils.js';
+import { TASK_GROUPS, PLAN_MAX, TASK_MAX_LENGTH, activeSession, skippedTasks } from '../content/coping.js';
 
-// PRÉVIA (só administrador): a aba Plano do roteiro "respiro, espero, sigo meu plano".
-// Ainda não grava no banco; os horários ficam só na memória da página.
-const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-const SITUATIONS = ['Depois do trabalho', 'Sozinho em casa', 'Com amigos', 'Estresse', 'Fim de semana'];
-const ACTIONS = ['Tomar um banho', 'Caminhar 15 minutos', 'Ligar para alguém', 'Preparar algo para comer', 'Ver uma série', 'Ir dormir mais cedo'];
-const WAIT_MINUTES = 10;
+// Aba Plano: a pessoa monta, com calma, a lista do que fazer quando a vontade aparecer.
+// Vontade leve → segue o plano. Vontade forte → SOS.
+// Cada vez começa desmarcada; uma vez em andamento continua por algumas horas se a pessoa sair.
 
-const demo = () => ({
-  plans: [{ day: 5, time: '19:00', situation: 'Depois do trabalho', actions: ['Tomar um banho', 'Preparar algo para comer'], drink: 'Água com gás e limão', phrase: 'Hoje não, valeu.', wins: 2 }],
-  editing: null, ritual: null
-});
+const chip = (task, on) => `<button type="button" class="plan-chip ${on ? 'on' : ''}" data-task="${escapeHtml(task)}" aria-pressed="${on}">${escapeHtml(task)}</button>`;
 
-function nextPlan(plans) {
-  const now = new Date();
-  const score = plan => {
-    const [h, m] = plan.time.split(':').map(Number);
-    let diff = (plan.day - now.getDay() + 7) % 7;
-    if (diff === 0 && h * 60 + m < now.getHours() * 60 + now.getMinutes()) diff = 7;
-    return diff * 1440 + h * 60 + m;
-  };
-  return [...plans].sort((a, b) => score(a) - score(b))[0];
-}
-
-const chips = (items, selected, name, multi) => items.map(item => {
-  const on = multi ? selected.includes(item) : selected === item;
-  return `<button type="button" class="plan-chip ${on ? 'on' : ''}" data-${name}="${escapeHtml(item)}" aria-pressed="${on}">${escapeHtml(item)}</button>`;
-}).join('');
-
-export const planView = {
-  html({ state }) {
-    const p = state.ui.planPreview ||= demo();
-    if (p.ritual) return ritualHtml(p);
-    if (p.editing) return editorHtml(p.editing);
-    const next = nextPlan(p.plans);
-    return `
-      <div class="plan-screen">
-        <p class="plan-preview-tag">PRÉVIA · só você vê · ainda não salva</p>
-        <div class="screen-title"><h2>Meu plano</h2><p>Quando o seu horário chega, você já sabe o que fazer.</p></div>
-        ${next ? `
-        <section class="plan-hero">
-          <span>SEU PRÓXIMO HORÁRIO</span>
-          <strong>${DAYS[next.day]} · ${next.time}</strong>
-          <p>${escapeHtml(next.situation)}</p>
-          <ol class="plan-steps-preview"><li>Respiro</li><li>Espero</li><li>Sigo meu plano</li></ol>
-          <button class="plan-go" data-go="${p.plans.indexOf(next)}">Chegou a hora</button>
-        </section>` : ''}
-        <section class="plan-list">
-          <h3>Meus horários de risco</h3>
-          ${p.plans.map((plan, i) => `
-            <article class="plan-card">
-              <div class="plan-card-time"><strong>${DAYS[plan.day].slice(0, 3)}</strong><span>${plan.time}</span></div>
-              <div class="plan-card-body">
-                <strong>${escapeHtml(plan.situation)}</strong>
-                <p>${plan.actions.map(escapeHtml).join(' · ')}</p>
-                <small>${plan.wins ? `Funcionou ${plan.wins} ${plan.wins === 1 ? 'vez' : 'vezes'}` : 'Plano pronto'}</small>
-              </div>
-              <button class="plan-card-edit" data-edit="${i}" aria-label="Editar">✎</button>
-            </article>`).join('')}
-          <button class="plan-add" id="plan-add">+ Preparar outro horário</button>
-        </section>
-      </div>`;
-  },
-  bind(ctx) {
-    const { state, redraw, navigate } = ctx;
-    const p = state.ui.planPreview;
-    if (p.ritual) return bindRitual(ctx, p);
-    if (p.editing) return bindEditor(ctx, p);
-    $$('[data-go]').forEach(b => b.addEventListener('click', () => { p.ritual = { plan: Number(b.dataset.go), step: 0, done: [] }; redraw(); }));
-    $$('[data-edit]').forEach(b => b.addEventListener('click', () => { p.editing = { index: Number(b.dataset.edit), ...structuredClone(p.plans[b.dataset.edit]) }; redraw(); }));
-    $('#plan-add').addEventListener('click', () => { p.editing = { index: -1, day: 5, time: '19:00', situation: SITUATIONS[0], actions: [], drink: '', phrase: '', wins: 0 }; redraw(); });
-    void navigate;
-  }
-};
-
-function editorHtml(e) {
+function editorHtml(draft, hasPlan) {
+  const catalog = TASK_GROUPS.flatMap(group => group.tasks);
+  const custom = draft.filter(task => !catalog.includes(task));
   return `
     <div class="plan-screen">
-      <p class="plan-preview-tag">PRÉVIA · só você vê · ainda não salva</p>
-      <div class="screen-title"><h2>${e.index < 0 ? 'Preparar um horário' : 'Editar horário'}</h2><p>Monte agora, com calma. Na hora, é só seguir.</p></div>
+      <div class="screen-title"><h2>${hasPlan ? 'Editar meu plano' : 'Monte seu plano'}</h2><p>Escolha até ${PLAN_MAX} coisas que você vai fazer quando a vontade aparecer. Monte agora, com calma — na hora é só seguir.</p></div>
       <section class="plan-editor">
-        <label>1. Quando a vontade costuma bater?</label>
-        <div class="plan-when"><select id="pe-day">${DAYS.map((d, i) => `<option value="${i}" ${i === e.day ? 'selected' : ''}>${d}</option>`).join('')}</select><input id="pe-time" type="time" value="${e.time}"></div>
-        <label>2. Em que situação?</label>
-        <div class="plan-chips">${chips(SITUATIONS, e.situation, 'situation', false)}</div>
-        <label>3. O que você vai fazer no lugar?</label>
-        <div class="plan-chips">${chips(ACTIONS, e.actions, 'action', true)}</div>
-        <label for="pe-drink">4. O que vai beber no lugar?</label>
-        <input id="pe-drink" value="${escapeHtml(e.drink)}" placeholder="Ex.: água com gás e limão">
-        <label for="pe-phrase">5. Sua frase se alguém te chamar para beber</label>
-        <input id="pe-phrase" value="${escapeHtml(e.phrase)}" placeholder="Ex.: Hoje não, valeu.">
-        <button class="primary-btn" id="pe-save">Salvar meu plano</button>
-        <button class="plan-cancel" id="pe-cancel">Cancelar</button>
+        <p class="plan-count" aria-live="polite"><strong>${draft.length}</strong> de ${PLAN_MAX} escolhidas</p>
+        ${TASK_GROUPS.map(group => `<label>${escapeHtml(group.title)}</label><div class="plan-chips">${group.tasks.map(task => chip(task, draft.includes(task))).join('')}</div>`).join('')}
+        <label for="plan-custom">Outra coisa que funciona para você</label>
+        ${custom.length ? `<div class="plan-chips">${custom.map(task => chip(task, true)).join('')}</div>` : ''}
+        <div class="plan-custom"><input id="plan-custom" maxlength="${TASK_MAX_LENGTH}" placeholder="Ex.: assistir um culto no YouTube"><button type="button" id="plan-custom-add">Adicionar</button></div>
+        <button class="primary-btn" id="plan-save">Salvar meu plano</button>
+        ${hasPlan ? '<button class="plan-cancel" id="plan-cancel">Cancelar</button>' : ''}
       </section>
     </div>`;
 }
 
-function bindEditor({ redraw, toast }, p) {
-  const e = p.editing;
-  const keep = () => { e.day = Number($('#pe-day').value); e.time = $('#pe-time').value || '19:00'; e.drink = $('#pe-drink').value; e.phrase = $('#pe-phrase').value; };
-  $$('[data-situation]').forEach(b => b.addEventListener('click', () => { keep(); e.situation = b.dataset.situation; redraw(); }));
-  $$('[data-action]').forEach(b => b.addEventListener('click', () => { keep(); const a = b.dataset.action; e.actions = e.actions.includes(a) ? e.actions.filter(x => x !== a) : [...e.actions, a]; redraw(); }));
-  $('#pe-cancel').addEventListener('click', () => { p.editing = null; redraw(); });
-  $('#pe-save').addEventListener('click', () => {
-    keep();
-    if (!e.actions.length) { toast('Escolha pelo menos uma coisa para fazer no lugar.'); return; }
-    const { index, ...plan } = e;
-    if (index < 0) p.plans.push(plan); else p.plans[index] = plan;
-    p.editing = null; redraw(); toast('Plano pronto para esse horário.');
-  });
+function homeHtml(plan) {
+  const hint = skippedTasks(plan);
+  return `
+    <div class="plan-screen">
+      <div class="screen-title"><h2>Meu plano</h2><p>Para quando a vontade aparecer, mas ainda dá para segurar.</p></div>
+      <section class="plan-hero">
+        <span>ESTOU COM VONTADE</span>
+        <strong>Siga seu plano</strong>
+        <p>${plan.tasks.length} ${plan.tasks.length === 1 ? 'tarefa' : 'tarefas'} que você mesmo escolheu.</p>
+        <button class="plan-go" id="plan-start">Começar agora</button>
+        <button class="plan-sos" id="plan-sos">A vontade está forte demais → SOS</button>
+      </section>
+      ${plan.uses ? `<p class="plan-stats">Você usou seu plano <strong>${plan.uses} ${plan.uses === 1 ? 'vez' : 'vezes'}</strong>${plan.wins ? ` e a vontade passou em <strong>${plan.wins}</strong>` : ''}.</p>` : ''}
+      ${hint.length ? `<p class="plan-hint">Você tem pulado <strong>${hint.map(escapeHtml).join(', ')}</strong>. Que tal trocar por algo que você faria de verdade?</p>` : ''}
+      <section class="plan-list">
+        <h3>Minhas tarefas</h3>
+        <ol class="plan-tasks">${plan.tasks.map(task => `<li>${escapeHtml(task)}</li>`).join('')}</ol>
+        <button class="plan-add" id="plan-edit">Editar meu plano</button>
+      </section>
+    </div>`;
 }
 
-function ritualHtml(p) {
-  const r = p.ritual, plan = p.plans[r.plan];
-  const head = `<div class="ritual-top"><span>${DAYS[plan.day]} · ${plan.time}</span><button id="rt-close">Sair</button></div>
-    <div class="ritual-progress">${['Respiro', 'Espero', 'Sigo meu plano'].map((s, i) => `<span class="${i < r.step ? 'done' : i === r.step ? 'on' : ''}"><i></i>${s}</span>`).join('')}</div>`;
-  let body;
-  if (r.step === 0) body = `<h2>Respire</h2><p>Puxe o ar em 4 segundos e solte em 6. Siga o círculo.</p><div class="ritual-breath"><div></div></div><button class="ritual-next" id="rt-next">Já respirei</button>`;
-  else if (r.step === 1) body = `<h2>Espere</h2><p>A vontade sobe… e vai embora. Fique aqui só ${WAIT_MINUTES} minutos.</p><div class="ritual-timer" id="rt-timer">${WAIT_MINUTES}:00</div><p class="ritual-note">Ela costuma perder força entre 15 e 30 minutos, mesmo sem beber.</p><button class="ritual-next" id="rt-next">Continuar</button>`;
-  else if (r.step === 2) body = `<h2>Siga seu plano</h2><p>Você já decidiu isso com calma. Agora é só fazer.</p>
-      <div class="ritual-checks">${plan.actions.map((a, i) => `<button class="ritual-check ${r.done.includes(i) ? 'on' : ''}" data-check="${i}"><span>${r.done.includes(i) ? '✓' : ''}</span>${escapeHtml(a)}</button>`).join('')}</div>
-      ${plan.drink ? `<div class="ritual-info"><small>Para beber</small><strong>${escapeHtml(plan.drink)}</strong></div>` : ''}
-      ${plan.phrase ? `<div class="ritual-info"><small>Se te chamarem</small><strong>“${escapeHtml(plan.phrase)}”</strong></div>` : ''}
-      <button class="ritual-next" id="rt-next">Passou</button>`;
-  else body = `<div class="ritual-done">✓</div><h2>Passou. A ${DAYS[plan.day].toLowerCase()} é sua de novo.</h2><p>Seu plano funcionou ${plan.wins} ${plan.wins === 1 ? 'vez' : 'vezes'}.</p><button class="ritual-next" id="rt-close2">Voltar ao meu plano</button>`;
-  return `<section class="ritual">${head}<div class="ritual-body">${body}</div></section>`;
+function runHtml(plan, run) {
+  const all = run.done.length === plan.tasks.length;
+  if (run.asking) return `
+    <section class="ritual"><div class="ritual-top"><span>Meu plano</span><button id="run-back">Voltar</button></div>
+      <div class="ritual-body">
+        <h2>A vontade passou?</h2>
+        <p>Você fez ${run.done.length} de ${plan.tasks.length}. ${run.done.length ? 'Cada uma conta.' : 'Tudo bem, você parou para pensar antes — isso já conta.'}</p>
+        <button class="ritual-next" id="run-yes">Sim, passou</button>
+        <button class="ritual-alt" id="run-no">Ainda não → SOS</button>
+      </div></section>`;
+  return `
+    <section class="ritual"><div class="ritual-top"><span>Meu plano · ${run.done.length}/${plan.tasks.length}</span><button id="run-close">Sair</button></div>
+      <div class="ritual-body">
+        <h2>Siga seu plano</h2>
+        <p>Você decidiu isso com a cabeça fria. Faça uma de cada vez e marque.</p>
+        <div class="ritual-checks">${plan.tasks.map(task => { const on = run.done.includes(task); return `<button class="ritual-check ${on ? 'on' : ''}" data-check="${escapeHtml(task)}" aria-pressed="${on}"><span>${on ? '✓' : ''}</span>${escapeHtml(task)}</button>`; }).join('')}</div>
+        <button class="ritual-next" id="run-finish">${all ? 'Fiz tudo!' : 'Terminei'}</button>
+      </div></section>`;
 }
 
-function bindRitual({ redraw }, p) {
-  const r = p.ritual;
-  const close = () => { clearInterval(r.timer); p.ritual = null; redraw(); };
-  $('#rt-close').addEventListener('click', close);
-  $('#rt-close2')?.addEventListener('click', close);
-  $$('[data-check]').forEach(b => b.addEventListener('click', () => { const i = Number(b.dataset.check); r.done = r.done.includes(i) ? r.done.filter(x => x !== i) : [...r.done, i]; redraw(); }));
-  if (r.step === 1) {
-    let left = WAIT_MINUTES * 60; const el = $('#rt-timer');
-    r.timer = setInterval(() => { if (!el.isConnected) return clearInterval(r.timer); left = Math.max(0, left - 1); el.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`; }, 1000);
+const doneHtml = passed => `
+  <section class="ritual"><div class="ritual-body">
+    <div class="ritual-done">✓</div>
+    <h2>${passed ? 'Você atravessou essa vontade.' : 'Você não ficou parado.'}</h2>
+    <p>${passed ? 'Seu plano funcionou. Da próxima vez ele vai estar aqui, do mesmo jeito.' : 'Seguir o plano já foi um passo. Se precisar, o SOS está a um toque.'}</p>
+    <button class="ritual-next" id="run-home">Voltar ao meu plano</button>
+  </div></section>`;
+
+export const planView = {
+  html({ state }) {
+    const plan = state.store.plan;
+    const ui = state.ui.plan ||= {};
+    if (ui.finished !== undefined) return doneHtml(ui.finished);
+    if (!plan || ui.draft) return editorHtml(ui.draft ||= [...(plan?.tasks || [])], Boolean(plan));
+    const active = activeSession(plan);
+    if (ui.running || active) {
+      ui.run ||= { done: [...(active?.done || [])] };
+      ui.running = true;
+      return runHtml(plan, ui.run);
+    }
+    return homeHtml(plan);
+  },
+  bind({ state, redraw, navigate, toast, mutate, endpoints }) {
+    const plan = state.store.plan;
+    const ui = state.ui.plan;
+    const reset = () => { state.ui.plan = {}; redraw(); };
+
+    $('#run-home')?.addEventListener('click', reset);
+
+    if (ui.draft) {
+      const toggle = task => {
+        if (ui.draft.includes(task)) ui.draft = ui.draft.filter(item => item !== task);
+        else if (ui.draft.length >= PLAN_MAX) { toast(`Escolha no máximo ${PLAN_MAX}. Um plano curto é mais fácil de seguir.`); return; }
+        else ui.draft.push(task);
+        redraw();
+      };
+      $$('[data-task]').forEach(button => button.addEventListener('click', () => toggle(button.dataset.task)));
+      const addCustom = () => {
+        const value = $('#plan-custom').value.trim().replace(/\s+/g, ' ');
+        if (!value) return;
+        if (!ui.draft.includes(value)) toggle(value);
+      };
+      $('#plan-custom-add').addEventListener('click', addCustom);
+      $('#plan-custom').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); addCustom(); } });
+      $('#plan-cancel')?.addEventListener('click', reset);
+      $('#plan-save').addEventListener('click', async () => {
+        if (!ui.draft.length) { toast('Escolha pelo menos uma coisa para fazer.'); return; }
+        const tasks = ui.draft;
+        if (await mutate(() => endpoints.plan(tasks), 'Plano salvo. Ele vai estar aqui sempre que precisar.')) reset();
+      });
+      return;
+    }
+
+    if (ui.running) {
+      const run = ui.run;
+      const save = () => endpoints.planSession(run.done).catch(() => toast('Não consegui salvar a marcação. Confira sua conexão.'));
+      $$('[data-check]').forEach(button => button.addEventListener('click', () => {
+        const task = button.dataset.check;
+        run.done = run.done.includes(task) ? run.done.filter(item => item !== task) : [...run.done, task];
+        save(); redraw();
+      }));
+      $('#run-close')?.addEventListener('click', () => { state.ui.plan = {}; state.store.plan = { ...plan, active: { startedAt: plan.active?.startedAt || new Date().toISOString(), done: run.done } }; navigate('inicio'); });
+      $('#run-finish')?.addEventListener('click', () => { run.asking = true; redraw(); });
+      $('#run-back')?.addEventListener('click', () => { run.asking = false; redraw(); });
+      const finish = async passed => {
+        const ok = await mutate(() => endpoints.planFinish({ passed, done: run.done }));
+        if (!ok) return;
+        if (passed) { state.ui.plan = { finished: true }; redraw(); } else { state.ui.plan = {}; navigate('sos'); }
+      };
+      $('#run-yes')?.addEventListener('click', () => finish(true));
+      $('#run-no')?.addEventListener('click', () => finish(false));
+      return;
+    }
+
+    // Começar já registra a vez, para ela continuar se a pessoa sair e voltar.
+    $('#plan-start')?.addEventListener('click', () => {
+      ui.running = true; ui.run = { done: [] }; redraw();
+      endpoints.planSession([]).catch(() => toast('Não consegui salvar. Confira sua conexão.'));
+    });
+    $('#plan-sos')?.addEventListener('click', () => navigate('sos'));
+    $('#plan-edit')?.addEventListener('click', () => { ui.draft = [...plan.tasks]; redraw(); });
   }
-  $('#rt-next')?.addEventListener('click', () => {
-    clearInterval(r.timer);
-    r.step += 1;
-    if (r.step === 3) p.plans[r.plan].wins += 1;
-    redraw();
-  });
-}
+};

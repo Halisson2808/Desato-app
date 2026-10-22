@@ -2,11 +2,10 @@
 // Para lançar algo novo, troque para true e publique.
 export const FEATURES = {
   inicio: true,
-  rotina: true,       // Jornada
   sos: true,
   apoio: false,       // Situações difíceis: removida do menu
   perfil: true,
-  plano: false        // PRÉVIA: só administrador vê até lançar
+  plano: true
 };
 
 export const canSee = (feature, admin) => FEATURES[feature] === true || admin === true;
