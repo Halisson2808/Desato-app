@@ -19,6 +19,18 @@ const PORT = process.env.PORT || 4173;
 const HOST = process.env.HOST || '127.0.0.1';
 if (STORAGE_MODE === 'json' && !['127.0.0.1', 'localhost', '::1'].includes(HOST)) throw new Error('Modo JSON permitido apenas em endereço local.');
 const PUBLIC_DIR = path.join(__dirname, 'public');
+// Página que a rota principal (/) mostra. Para trocar o quiz pela página de vendas, use '/site.html'.
+// Troque também o sitemap.xml: a outra página fica listada, a que está na raiz não.
+const ROOT_FILE = '/quiz.html';
+const SITE_ORIGIN = 'https://www.desatoapp.com.br';
+// A raiz e a cópia dela em /quiz ou /page declaram a raiz como endereço principal para o Google.
+function canonicalFor(data, pathname) {
+  const own = { '/quiz': '/quiz.html', '/page': '/site.html' }[pathname.replace(/\/$/, '')];
+  if (pathname !== '/' && own !== ROOT_FILE) return data;
+  return Buffer.from(data.toString('utf8')
+    .replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${SITE_ORIGIN}/$2`)
+    .replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${SITE_ORIGIN}/$2`));
+}
 const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(__dirname, 'data');
 const STORE_FILE = path.join(DATA_DIR, 'store.json');
 const { createFunnelStore } = require('./lib/funnel.cjs');
@@ -373,7 +385,7 @@ async function handleApi(req, res, pathname) {
 }
 
 function serveStatic(req, res, pathname) {
-  let requested = pathname === '/' ? '/quiz.html' : /^\/page\/?$/.test(pathname) ? '/site.html' : /^\/quiz(?:\/|$)/.test(pathname) ? '/quiz.html' : /^\/app(?:\/|$)/.test(pathname) ? '/index.html' : pathname;
+  let requested = pathname === '/' ? ROOT_FILE : /^\/page\/?$/.test(pathname) ? '/site.html' : /^\/quiz(?:\/|$)/.test(pathname) ? '/quiz.html' : /^\/app(?:\/|$)/.test(pathname) ? '/index.html' : pathname;
   requested = decodeURIComponent(requested);
   const safe = path.normalize(requested).replace(/^([.][.][\/\\])+/, '');
   let filePath = path.join(PUBLIC_DIR, safe);
@@ -401,6 +413,7 @@ function serveStatic(req, res, pathname) {
         return;
       }
       const ext = path.extname(filePath).toLowerCase();
+      if (/[\\/](?:quiz|site)\.html$/.test(filePath)) data = canonicalFor(data, pathname);
       res.writeHead(200, {
         'Content-Type': mime[ext] || 'application/octet-stream',
         'Cache-Control': 'no-cache'
