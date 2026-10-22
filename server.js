@@ -81,7 +81,7 @@ function defaultStore() {
       sessions: []
     },
     situations: {},
-    plan: null
+    plans: []
   };
 }
 
@@ -102,7 +102,9 @@ function readStore() {
   ensureStore();
   const store = JSON.parse(fs.readFileSync(STORE_FILE, 'utf8'));
   if (!store.situations || typeof store.situations !== 'object' || Array.isArray(store.situations)) store.situations = {};
-  if (!store.plan || !Array.isArray(store.plan.tasks)) store.plan = null;
+  // Formato antigo (um plano só) vira o Plano 1.
+  if (!Array.isArray(store.plans)) store.plans = store.plan?.tasks ? [{ ...store.plan, slot: 1, name: '' }] : [];
+  delete store.plan;
   return store;
 }
 
@@ -279,30 +281,31 @@ async function handleApi(req, res, pathname) {
     return json(res, 200, summary(store));
   }
 
-  if (pathname === '/api/plan' && method === 'PUT') {
-    const { tasks, error } = coping.normalizeTasks(body.tasks);
-    if (error) invalid(error);
-    const old = store.plan || {};
-    // Trocar a lista recomeça a vez em andamento; a contagem de pulos de quem continua é mantida.
-    store.plan = { tasks, active: null, uses: old.uses || 0, wins: old.wins || 0, skips: Object.fromEntries(tasks.map(task => [task, old.skips?.[task] || 0])), updatedAt: new Date().toISOString() };
+  const planRoute = /^\/api\/plans\/(\d)(\/session|\/finish)?$/.exec(pathname);
+  if (planRoute) {
+    const slot = coping.validSlot(planRoute[1]);
+    if (!slot) return json(res, 404, { error: 'Plano não encontrado.' });
+    const index = store.plans.findIndex(plan => plan.slot === slot);
+    const plan = store.plans[index];
+    if (!planRoute[2] && method === 'PUT') {
+      const { tasks, error } = coping.normalizeTasks(body.tasks);
+      const { name, error: nameError } = coping.normalizeName(body.name);
+      if (error || nameError) invalid(error || nameError);
+      // Trocar a lista recomeça a vez em andamento.
+      const next = { slot, name, tasks, active: null, uses: plan?.uses || 0, skips: coping.keptSkips(tasks, plan), updatedAt: new Date().toISOString() };
+      if (plan) store.plans[index] = next; else store.plans.push(next);
+    } else if (!planRoute[2] && method === 'DELETE') {
+      if (plan) store.plans.splice(index, 1);
+    } else if (planRoute[2] === '/session' && method === 'PUT') {
+      if (!plan) invalid('Monte esse plano primeiro.');
+      plan.active = { startedAt: coping.activeSession(plan)?.startedAt || new Date().toISOString(), done: coping.normalizeDone(body.done, plan.tasks) };
+    } else if (planRoute[2] === '/finish' && method === 'POST') {
+      if (!plan) invalid('Monte esse plano primeiro.');
+      Object.assign(plan, coping.finishStats(plan, coping.normalizeDone(body.done, plan.tasks)));
+    } else return json(res, 404, { error: 'Rota não encontrada.' });
+    store.plans.sort((x, y) => x.slot - y.slot);
     writeStore(store);
-    return json(res, 200, { plan: store.plan });
-  }
-
-  if (pathname === '/api/plan/session' && method === 'PUT') {
-    if (!store.plan) invalid('Monte seu plano primeiro.');
-    const current = coping.activeSession(store.plan);
-    store.plan.active = { startedAt: current?.startedAt || new Date().toISOString(), done: coping.normalizeDone(body.done, store.plan.tasks) };
-    writeStore(store);
-    return json(res, 200, { plan: store.plan });
-  }
-
-  if (pathname === '/api/plan/finish' && method === 'POST') {
-    if (!store.plan) invalid('Monte seu plano primeiro.');
-    if (typeof body.passed !== 'boolean') invalid('Informe se a vontade passou.');
-    Object.assign(store.plan, coping.finishStats(store.plan, coping.normalizeDone(body.done, store.plan.tasks), body.passed));
-    writeStore(store);
-    return json(res, 200, { plan: store.plan });
+    return json(res, 200, { plans: store.plans });
   }
 
   if (/^\/api\/situations\/[^/]+$/.test(pathname) && method === 'PUT') {

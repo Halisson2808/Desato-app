@@ -1090,13 +1090,19 @@ button:disabled { cursor: default; opacity: .65; }
 .plan-count strong { color: var(--primary); font-size: 15px; }
 .plan-custom { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; }
 .plan-custom button { min-height: 48px; padding: 0 16px; border-radius: 14px; border: 1px solid var(--primary); background: transparent; color: var(--primary); font-weight: 800; cursor: pointer; }
-.plan-sos { margin-top: 4px; min-height: 44px; border: 1px solid rgba(255,255,255,.25); border-radius: 14px; background: transparent; color: #ffd6cf; font-size: 14px; font-weight: 700; cursor: pointer; }
-.plan-stats, .plan-hint { margin: 0; padding: 14px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
-.plan-stats { background: var(--primary-3); color: var(--text); }
+.plan-hint { margin: 0; padding: 14px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
 .plan-hint { background: #fdf3df; color: #6b4708; }
 .plan-tasks { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; counter-reset: task; }
 .plan-tasks li { counter-increment: task; display: flex; gap: 12px; align-items: center; min-height: 52px; padding: 8px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); font-size: 15px; font-weight: 650; overflow-wrap: anywhere; }
 .plan-tasks li::before { content: counter(task); width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 10px; background: var(--primary-3); color: var(--primary); font-weight: 800; font-size: 13px; }
-.ritual-alt { min-height: 50px; border: 1px solid rgba(255,255,255,.25); border-radius: 16px; background: transparent; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
 
 img[src="/logo.png"], img[src="/favicon.png"] { border-radius: 22%; }
+.plan-picks { display: grid; gap: 10px; }
+.plan-pick { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 76px; padding: 14px 16px; border-radius: 20px; border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow); text-align: left; color: var(--text); cursor: pointer; }
+.plan-pick-icon { width: 44px; height: 44px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 14px; background: var(--primary); color: #fff; font-weight: 800; font-size: 18px; }
+.plan-pick-body { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.plan-pick-body strong { font-size: 17px; overflow-wrap: anywhere; }
+.plan-pick-body small { font-size: 13px; color: var(--muted); }
+.plan-pick-arrow { font-size: 28px; color: var(--muted); }
+.plan-back { justify-self: start; border: 0; background: transparent; color: var(--primary); font-size: 15px; font-weight: 750; padding: 6px 0; cursor: pointer; }
+.plan-editor > input#plan-name { width: 100%; box-sizing: border-box; }

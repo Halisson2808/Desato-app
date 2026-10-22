@@ -24,8 +24,9 @@ export const endpoints = {
   money: body => api('/api/money', { method: 'PUT', body: JSON.stringify(body) }),
   checkin: body => api('/api/checkin', { method: 'POST', body: JSON.stringify(body) }),
   sos: body => api('/api/sos-session', { method: 'POST', body: JSON.stringify(body) }),
-  plan: tasks => api('/api/plan', { method: 'PUT', body: JSON.stringify({ tasks }) }),
-  planSession: done => api('/api/plan/session', { method: 'PUT', body: JSON.stringify({ done }) }),
-  planFinish: body => api('/api/plan/finish', { method: 'POST', body: JSON.stringify(body) }),
+  plan: (slot, body) => api(`/api/plans/${slot}`, { method: 'PUT', body: JSON.stringify(body) }),
+  planDelete: slot => api(`/api/plans/${slot}`, { method: 'DELETE' }),
+  planSession: (slot, done) => api(`/api/plans/${slot}/session`, { method: 'PUT', body: JSON.stringify({ done }) }),
+  planFinish: (slot, done) => api(`/api/plans/${slot}/finish`, { method: 'POST', body: JSON.stringify({ done }) }),
   situation: (id, body) => api(`/api/situations/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) })
 };

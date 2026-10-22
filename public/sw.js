@@ -1,4 +1,4 @@
-const CACHE = 'app-mvp-v56';
+const CACHE = 'app-mvp-v57';
 const ASSETS = ['/', '/app', '/page', '/quiz', '/site.css', '/funnel.css', '/js/site.js', '/js/quiz.js', '/js/quiz-model.js', '/styles.css', '/js/app.js', '/js/api.js', '/js/utils.js',
   '/js/views/home.js', '/js/views/plan.js', '/js/content/coping.js', '/js/views/sos.js',
   '/js/views/profile.js', '/js/views/support.js',

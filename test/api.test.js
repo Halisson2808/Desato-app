@@ -143,15 +143,19 @@ test('situações validam id e três respostas', async () => {
   assert.equal(store.situations.festa.refuse, 'Hoje não');
 });
 
-test('plano pessoal valida a lista, guarda a vez em andamento e conta pulos', async () => {
-  assert.equal((await request('/api/plan/session', 'PUT', { done: [] })).status, 400);
-  assert.equal((await request('/api/plan', 'PUT', { tasks: [] })).status, 400);
-  assert.equal((await request('/api/plan', 'PUT', { tasks: ['a', 'b', 'c', 'd', 'e', 'f'] })).status, 400);
-  assert.equal((await request('/api/plan', 'PUT', { tasks: ['Orar', 'Caminhar 15 minutos'] })).status, 200);
-  const started = await request('/api/plan/session', 'PUT', { done: ['Orar', 'Fora do plano'] });
-  assert.deepEqual(started.data.plan.active.done, ['Orar']);
-  assert.equal((await request('/api/plan/finish', 'POST', { done: ['Orar'] })).status, 400);
-  const { plan } = (await request('/api/plan/finish', 'POST', { passed: true, done: ['Orar'] })).data;
-  assert.equal(plan.active, null);
-  assert.deepEqual([plan.uses, plan.wins, plan.skips['Caminhar 15 minutos'], plan.skips.Orar], [1, 1, 1, 0]);
+test('até dois planos com nome: valida, guarda a vez em andamento e conta pulos', async () => {
+  assert.equal((await request('/api/plans/1/session', 'PUT', { done: [] })).status, 400);
+  assert.equal((await request('/api/plans/3', 'PUT', { tasks: ['Orar'] })).status, 404);
+  assert.equal((await request('/api/plans/1', 'PUT', { tasks: [] })).status, 400);
+  assert.equal((await request('/api/plans/1', 'PUT', { tasks: ['a', 'b', 'c', 'd', 'e', 'f'] })).status, 400);
+  assert.equal((await request('/api/plans/1', 'PUT', { name: 'x'.repeat(41), tasks: ['Orar'] })).status, 400);
+  assert.equal((await request('/api/plans/1', 'PUT', { tasks: ['Orar', 'Caminhar 15 minutos'] })).status, 200);
+  assert.equal((await request('/api/plans/2', 'PUT', { name: ' Noite ', tasks: ['Tomar um banho'] })).status, 200);
+  const started = await request('/api/plans/1/session', 'PUT', { done: ['Orar', 'Fora do plano'] });
+  assert.deepEqual(started.data.plans[0].active.done, ['Orar']);
+  const { plans } = (await request('/api/plans/1/finish', 'POST', { done: ['Orar'] })).data;
+  assert.deepEqual(plans.map(plan => [plan.slot, plan.name]), [[1, ''], [2, 'Noite']]);
+  assert.equal(plans[0].active, null);
+  assert.deepEqual([plans[0].uses, plans[0].skips['Caminhar 15 minutos'], plans[0].skips.Orar], [1, 1, 0]);
+  assert.deepEqual((await request('/api/plans/2', 'DELETE')).data.plans.map(plan => plan.slot), [1]);
 });
