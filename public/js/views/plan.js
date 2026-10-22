@@ -17,7 +17,7 @@ function listHtml(plans) {
         ${plans.map(plan => `
           <button class="plan-pick" data-open="${plan.slot}">
             <span class="plan-pick-icon" aria-hidden="true">${plan.slot}</span>
-            <span class="plan-pick-body"><strong>${escapeHtml(planName(plan))}</strong><small>${activeSession(plan) ? 'Em andamento — toque para continuar' : plan.uses ? `Seguido ${plural(plan.uses, 'vez', 'vezes')}` : 'Pronto para usar'}</small></span>
+            <span class="plan-pick-body"><strong>${escapeHtml(planName(plan))}</strong><small>${activeSession(plan) ? 'Em andamento — toque para continuar' : 'Pronto para usar'}</small></span>
             <span class="plan-pick-arrow" aria-hidden="true">›</span>
           </button>`).join('')}
         ${free ? `<button class="plan-add" data-create="${free}">+ ${plans.length ? 'Criar outro plano' : 'Criar meu primeiro plano'}</button>` : ''}
@@ -33,7 +33,7 @@ function detailHtml(plan) {
       <section class="plan-hero">
         <span>PLANO ${plan.slot}</span>
         <strong>${escapeHtml(planName(plan))}</strong>
-        <p>${plural(plan.tasks.length, 'tarefa', 'tarefas')} que você mesmo escolheu.${plan.uses ? ` Seguido ${plural(plan.uses, 'vez', 'vezes')}.` : ''}</p>
+        <p>${plural(plan.tasks.length, 'tarefa', 'tarefas')} que você mesmo escolheu.</p>
         <button class="plan-go" id="plan-start">Começar agora</button>
       </section>
       ${hint.length ? `<p class="plan-hint">Você tem pulado <strong>${hint.map(escapeHtml).join(', ')}</strong>. Que tal trocar por algo que você faria de verdade?</p>` : ''}
