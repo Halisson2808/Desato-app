@@ -7,7 +7,7 @@ const quiz = FUNNELS[0];
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const num = value => new Intl.NumberFormat('pt-BR').format(Number(value) || 0);
 const pct = (part, total) => total ? `${Math.round(part / total * 100)}%` : '—';
-let days = 7, data = null;
+let days = 7, data = null, tab = 'users';
 
 const EVENT_LABELS = {
   page_view: 'Abriu a página', quiz_start: 'Começou o quiz', question_view: 'Viu a pergunta', answer: 'Respondeu',
@@ -41,15 +41,7 @@ function loginScreen(message = '') {
       <label for="admin-pass">Senha</label><input id="admin-pass" type="password" autocomplete="current-password" required>
       <p class="admin-error" id="admin-error" ${message ? '' : 'hidden'}>${escape(message)}</p>
       <button type="submit" id="admin-submit">Entrar</button>
-      <button type="button" class="admin-link" id="admin-forgot">Criar ou esqueci minha senha</button>
     </form></section>`;
-  document.querySelector('#admin-forgot').addEventListener('click', async () => {
-    const email = document.querySelector('#admin-email').value.trim(), error = document.querySelector('#admin-error');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { error.textContent = 'Digite o seu e-mail acima e toque de novo.'; error.hidden = false; return; }
-    const { error: failure } = await auth.sendPasswordLink(email);
-    error.textContent = failure ? 'Não consegui enviar agora. Tente de novo em alguns minutos.' : 'Pronto: abra o link que chegou no seu e-mail (veja o spam) neste mesmo navegador para criar a senha.';
-    error.classList.toggle('ok', !failure); error.hidden = false;
-  });
   document.querySelector('#admin-form').addEventListener('submit', async event => {
     event.preventDefault();
     const button = document.querySelector('#admin-submit'), error = document.querySelector('#admin-error');
@@ -93,11 +85,11 @@ async function load() {
   const session = await accessSession();
   if (!session || !openedWithPassword(session)) return loginScreen();
   root.innerHTML = '<p class="admin-loading">Carregando os números…</p>';
-  const response = await fetch(`/api/admin/overview?days=${days}`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+  const response = await fetch(tab === 'users' ? '/api/admin/users' : `/api/admin/overview?days=${days}`, { headers: { Authorization: `Bearer ${session.access_token}` } });
   const body = await response.json().catch(() => ({}));
   if (response.status === 403 || response.status === 401) { await auth.signOut().catch(() => {}); return loginScreen(body.error || 'Acesso restrito ao administrador.'); }
   if (!response.ok) { root.innerHTML = `<p class="admin-loading">${escape(body.error || 'Não consegui carregar.')} <button id="retry">Tentar de novo</button></p>`; document.querySelector('#retry').onclick = load; return; }
-  data = body; dashboard();
+  data = body; tab === 'users' ? usersTab() : dashboard();
 }
 
 const table = (headers, rows) => rows.length
@@ -115,14 +107,43 @@ function funnelRows() {
   return rows;
 }
 
+// Topo do painel: abas + (só no tráfego) o filtro de período.
+function topBar() {
+  return `<header class="admin-top"><div><img src="/favicon.png" width="36" height="36" alt=""><h1>Painel do Desato</h1></div>
+      <div class="admin-period">${tab === 'traffic' ? [[1, 'Hoje'], [7, '7 dias'], [30, '30 dias'], [90, '90 dias']].map(([d, l]) => `<button data-days="${d}" class="${d === days ? 'on' : ''}">${l}</button>`).join('') : ''}<button id="admin-out" class="ghost">Sair</button></div></header>
+    <nav class="admin-tabs"><button data-tab="users" class="${tab === 'users' ? 'on' : ''}">Usuários</button><button data-tab="traffic" class="${tab === 'traffic' ? 'on' : ''}">Tráfego e quiz</button></nav>`;
+}
+function bindTop() {
+  root.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { if (tab !== b.dataset.tab) { tab = b.dataset.tab; load(); } }));
+  root.querySelectorAll('[data-days]').forEach(b => b.addEventListener('click', () => { days = Number(b.dataset.days); load(); }));
+  document.querySelector('#admin-out').addEventListener('click', async () => { await auth.signOut().catch(() => {}); loginScreen(); });
+}
+const when = value => value ? new Date(value).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+
+// Aba Usuários: contas, compras, assinaturas do upsell e quando cada um entrou.
+function usersTab() {
+  const t = data.totals;
+  root.innerHTML = `${topBar()}
+    <section class="admin-kpis">
+      ${[['Contas criadas', t.accounts], ['Compraram o app', t.buyers], ['Assinantes do upsell', t.subscribers, 'Em breve'], ['Entraram nos últimos 7 dias', t.active_7d], ['Marcaram o dia (7 dias)', t.checkins_7d], ['Reembolsos/chargebacks', t.refunded]]
+        .map(([label, value, extra]) => `<article><span>${label}</span><strong>${num(value)}</strong>${extra ? `<small>${extra}</small>` : ''}</article>`).join('')}
+    </section>
+    ${data.buyers_without_account ? `<p class="admin-hint">${num(data.buyers_without_account)} ${data.buyers_without_account === 1 ? 'pessoa comprou e ainda não entrou' : 'pessoas compraram e ainda não entraram'} no app.</p>` : ''}
+    <section class="admin-card"><h2>Usuários e quando entraram</h2><p class="admin-hint">Ordenado pela última entrada. "Último dia marcado" é o último "Você bebeu hoje?" respondido.</p>
+      ${table(['E-mail', 'Criou a conta', 'Última entrada', 'Compra', 'Upsell', 'Dias marcados', 'Último dia marcado'],
+        data.users.map(u => [`${escape(u.email)}${u.role === 'admin' ? ' <span class="admin-tag">admin</span>' : ''}`, when(u.created_at), when(u.last_sign_in_at),
+          u.purchase === 'paid' ? 'Paga' : u.purchase ? escape(u.purchase) : '—', u.subscription ? escape(u.subscription) : '—', num(u.checkins),
+          u.last_checkin ? u.last_checkin.split('-').reverse().join('/') : '—']))}
+    </section>`;
+  bindTop();
+}
+
 function dashboard() {
   const t = data.totals, f = data.funnel, rows = funnelRows(), top = rows[0][1] || 0;
   const maxDay = Math.max(1, ...data.daily.map(d => d.visitors));
   const answersByStep = {};
   for (const a of data.answers) (answersByStep[a.step] ||= []).push(a);
-  root.innerHTML = `
-    <header class="admin-top"><div><img src="/favicon.png" width="36" height="36" alt=""><h1>Painel do Desato</h1></div>
-      <div class="admin-period">${[[1, 'Hoje'], [7, '7 dias'], [30, '30 dias'], [90, '90 dias']].map(([d, l]) => `<button data-days="${d}" class="${d === days ? 'on' : ''}">${l}</button>`).join('')}<button id="admin-pass" class="ghost">Trocar senha</button><button id="admin-out" class="ghost">Sair</button></div></header>
+  root.innerHTML = `${topBar()}
 
     <section class="admin-kpis">
       ${[['Visitantes', t.visitors], ['Sessões', t.sessions], ['Começaram o quiz', f.started, pct(f.started, f.visits)], ['Viram a oferta', f.offer, pct(f.offer, f.visits)], ['Clicaram em comprar', f.checkout, pct(f.checkout, f.visits)]]
@@ -162,13 +183,14 @@ function dashboard() {
       ${data.sessions.length ? data.sessions.map(s => `<details class="admin-session"><summary><span>${new Date(s.started_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span><b>${escape(s.source)}</b><span>${{ mobile: 'Celular', tablet: 'Tablet', desktop: 'Computador' }[s.device] || s.device}</span><span class="last">${escape(EVENT_LABELS[s.events?.at(-1)?.event] || '')}</span></summary>
         <p class="admin-hint">Entrou por <code>${escape(s.landing || '/')}</code>${s.utm_campaign ? ` · campanha ${escape(s.utm_campaign)}` : ''}</p>
         <ol>${(s.events || []).map(e => `<li><time>${new Date(e.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time> ${escape(EVENT_LABELS[e.event] || e.event)}${e.step ? ` ${e.step}` : ''}${e.event === 'answer' ? `: <b>${escape(answerLabel(e.step, e.detail))}</b>` : e.event === 'question_view' ? ` — ${escape(questionTitle(e.detail))}` : e.event === 'page_view' ? ` <code>${escape(e.path)}</code>` : ''}</li>`).join('')}</ol></details>`).join('') : '<p class="admin-empty">Sem sessões neste período.</p>'}</section>`;
-  root.querySelectorAll('[data-days]').forEach(b => b.addEventListener('click', () => { days = Number(b.dataset.days); load(); }));
-  document.querySelector('#admin-pass').addEventListener('click', () => passwordScreen(true));
-  document.querySelector('#admin-out').addEventListener('click', async () => { await auth.signOut().catch(() => {}); loginScreen(); });
+  bindTop();
 }
 
 initializeAuth(() => {}).then(async () => {
-  const code = new URLSearchParams(location.search).get('code');
+  const params = new URLSearchParams(location.search);
+  // Link de senha velho ou já usado: limpa o endereço e avisa, sem mostrar o erro técnico.
+  if (params.get('error') || location.hash.includes('error=')) { history.replaceState(null, '', '/admin'); return loginScreen('Esse link de senha expirou ou já foi usado. Entre com o seu e-mail e a sua senha.'); }
+  const code = params.get('code');
   if (!code) return load();
   history.replaceState(null, '', '/admin');
   const { error } = await auth.exchangeCode(code);

@@ -295,6 +295,11 @@ async function handleApi(req, res, pathname) {
     const to = new Date(Date.now() + 60_000), from = new Date(Date.now() - days * 86_400_000);
     return json(res, 200, await cloud.adminOverview(session, from.toISOString(), to.toISOString()));
   }
+  if (pathname === '/api/admin/users' && method === 'GET' && STORAGE_MODE === 'supabase') {
+    const session = await cloud.authenticate(req);
+    if (!signedInWithPassword(session.token)) return json(res, 403, { error: 'Entre no painel com e-mail e senha.' });
+    return json(res, 200, await cloud.adminUsers(session));
+  }
   if (pathname === '/api/health' && method === 'GET') return json(res, 200, { app: 'desato', mode: STORAGE_MODE });
   if (STORAGE_MODE === 'supabase') {
     // Identidade e acesso são conferidos em paralelo para responder mais rápido.

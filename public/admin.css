@@ -76,3 +76,9 @@ code { font-size: 12px; background: #f1f5f2; padding: 2px 6px; border-radius: 6p
 .admin-link { margin-top: 6px; border: 0; background: transparent; color: var(--green); font-size: 13px; font-weight: 600; text-decoration: underline; cursor: pointer; min-height: 36px; }
 .admin-error.ok { color: var(--green); }
 .admin-login .admin-link { background: transparent; color: var(--green); border: 0; margin-top: 4px; box-shadow: none; }
+/* Abas do painel */
+.admin-tabs { display: flex; gap: 4px; margin: -4px 0 16px; border-bottom: 1px solid var(--line); }
+.admin-tabs button { border: 0; background: transparent; padding: 10px 14px; font-size: 14px; font-weight: 600; color: var(--muted); border-bottom: 3px solid transparent; cursor: pointer; }
+.admin-tabs button.on { color: var(--green); border-bottom-color: var(--green); }
+.admin-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 99px; background: var(--mint); color: var(--green); font-size: 11px; font-weight: 700; }
+td:first-child { white-space: normal; }
