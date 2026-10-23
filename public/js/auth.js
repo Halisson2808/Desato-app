@@ -25,6 +25,8 @@ export async function accessSession() {
   return data.session || null;
 }
 export const auth = {
+  // Só para a área /admin: entrada com e-mail e senha.
+  passwordLogin: (email, password) => client.auth.signInWithPassword({ email, password }),
   // Confere a compra no servidor do Supabase e recebe a sessão direto, sem e-mail.
   emailLogin: async email => {
     let response;

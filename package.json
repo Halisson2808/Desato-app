@@ -13,7 +13,8 @@
     "db:link": "node scripts/supabase.cjs link --project-ref szvxlhubtvhazlzohpse",
     "db:push": "node scripts/supabase.cjs db push",
     "build:auth": "node scripts/build-auth.cjs",
-    "sb": "node scripts/supabase.cjs"
+    "sb": "node scripts/supabase.cjs",
+    "admin:password": "node scripts/set-admin-password.cjs"
   },
   "engines": {
     "node": ">=18"

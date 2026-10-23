@@ -272,6 +272,29 @@ async function handleApi(req, res, pathname) {
     return json(res,200,{ok:true});
   }
   if (pathname === '/api/config' && method === 'GET') return json(res, 200, { mode: STORAGE_MODE, supabaseUrl: SUPABASE_URL, publishableKey: SUPABASE_KEY, funnelEnabled:process.env.FUNNEL_ENABLED === 'true' });
+  // Rastreamento anônimo do site e do quiz (sem login).
+  if (pathname === '/api/track' && method === 'POST') {
+    const text = (value, max) => typeof value === 'string' ? value.slice(0, max) : '';
+    const event = {
+      p_visitor: text(body.visitor, 64), p_session: text(body.session, 64), p_event: text(body.event, 40), p_path: text(body.path, 200),
+      p_step: Number.isInteger(body.step) && body.step >= 0 && body.step <= 50 ? body.step : null, p_detail: text(body.detail, 120),
+      p_referrer: text(body.referrer, 120), p_utm_source: text(body.utm_source, 120), p_utm_medium: text(body.utm_medium, 120),
+      p_utm_campaign: text(body.utm_campaign, 120), p_utm_content: text(body.utm_content, 120), p_utm_term: text(body.utm_term, 120),
+      p_src: text(body.src, 120), p_landing: text(body.landing, 300), p_device: text(body.device, 10)
+    };
+    if (event.p_visitor.length < 8 || event.p_session.length < 8 || !event.p_event) invalid('Evento inválido.');
+    if (STORAGE_MODE === 'supabase') await cloud.track(event);
+    return json(res, 200, { ok: true });
+  }
+  // Painel de admin: só sessão aberta com senha e conta admin no banco.
+  if (pathname === '/api/admin/overview' && method === 'GET' && STORAGE_MODE === 'supabase') {
+    const session = await cloud.authenticate(req);
+    if (!signedInWithPassword(session.token)) return json(res, 403, { error: 'Entre no painel com e-mail e senha.' });
+    const url = new URL(req.url, 'http://localhost');
+    const days = Math.min(365, Math.max(1, Number(url.searchParams.get('days')) || 7));
+    const to = new Date(Date.now() + 60_000), from = new Date(Date.now() - days * 86_400_000);
+    return json(res, 200, await cloud.adminOverview(session, from.toISOString(), to.toISOString()));
+  }
   if (pathname === '/api/health' && method === 'GET') return json(res, 200, { app: 'desato', mode: STORAGE_MODE });
   if (STORAGE_MODE === 'supabase') {
     // Identidade e acesso são conferidos em paralelo para responder mais rápido.
@@ -389,7 +412,7 @@ async function handleApi(req, res, pathname) {
 }
 
 function serveStatic(req, res, pathname) {
-  let requested = pathname === '/' ? ROOT_FILE : /^\/page\/?$/.test(pathname) ? '/site.html' : /^\/quiz(?:\/|$)/.test(pathname) ? '/quiz.html' : /^\/app(?:\/|$)/.test(pathname) ? '/index.html' : pathname;
+  let requested = pathname === '/' ? ROOT_FILE : /^\/admin\/?$/.test(pathname) ? '/admin.html' : /^\/page\/?$/.test(pathname) ? '/site.html' : /^\/quiz(?:\/|$)/.test(pathname) ? '/quiz.html' : /^\/app(?:\/|$)/.test(pathname) ? '/index.html' : pathname;
   requested = decodeURIComponent(requested);
   const safe = path.normalize(requested).replace(/^([.][.][\/\\])+/, '');
   let filePath = path.join(PUBLIC_DIR, safe);
@@ -428,6 +451,14 @@ function serveStatic(req, res, pathname) {
 }
 
 if (STORAGE_MODE === 'json') ensureStore();
+
+// O token já foi validado no Supabase; aqui só lemos como a sessão foi aberta (amr).
+function signedInWithPassword(token) {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+    return Array.isArray(payload.amr) && payload.amr.some(item => item?.method === 'password');
+  } catch { return false; }
+}
 
 function sameHost(origin, host) {
   try { const parsed = new URL(origin); return ['http:', 'https:'].includes(parsed.protocol) && parsed.host === host; } catch { return false; }

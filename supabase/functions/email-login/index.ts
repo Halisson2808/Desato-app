@@ -73,6 +73,16 @@ Deno.serve(async (req) => {
     return reply(403, { error: "Não encontramos uma compra com este e-mail. Use o mesmo e-mail do pagamento." });
   }
 
+  // Conta de administrador nunca entra só com e-mail: precisa da senha, pela área /admin.
+  const { data: adminRows } = await admin.from("desato_user_roles").select("role, user_id").eq("role", "admin");
+  if (adminRows?.length) {
+    const ids = new Set(adminRows.map(row => row.user_id));
+    const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    if (users?.users?.some(user => ids.has(user.id) && user.email?.toLowerCase() === email)) {
+      return reply(409, { error: "Esta conta entra com senha pela área de administrador (/admin)." });
+    }
+  }
+
   // Cria a conta na primeira entrada; se já existe, segue.
   const created = await admin.auth.admin.createUser({ email, email_confirm: true });
   if (created.error && !/already|registered|exists/i.test(created.error.message)) {

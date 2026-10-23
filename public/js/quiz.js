@@ -1,4 +1,8 @@
 import { FUNNELS, OFFER, validateFunnel, financialProjection } from './quiz-model.js';
+import { track, withCampaign } from './track.js';
+// Cada etapa é registrada uma vez por visita (re-desenhar a tela não conta de novo).
+const tracked = new Set();
+const trackOnce = (key, event, extra) => { if (tracked.has(key)) return; tracked.add(key); track(event, extra); };
 const main = document.querySelector('#quiz-main');
 const quiz = FUNNELS.find(item => item.id === location.pathname.split('/')[2]) || FUNNELS[0];
 const currency = value => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value);
@@ -40,6 +44,7 @@ function advance(value) {
   const question=quiz.questions[step];
   try {validateFunnel(quiz.id,{[question.id]:value});} catch(error) {showError(error.message);return;}
   advancing=true;answers[question.id]=value;
+  track('answer',{step:step+1,detail:Array.isArray(value)?value.join(','):String(value)});
   if(step===quiz.questions.length-1)validateFunnel(quiz.id,answers,true);
   step++;saveProgress(step===quiz.questions.length);render();focus();advancing=false;
 }
@@ -51,14 +56,16 @@ function progress() {
 // Tira o foco do botão tocado para o próximo cartão não aparecer marcado no celular.
 function clearTouchState() { if(document.activeElement && document.activeElement!==main) document.activeElement.blur?.(); }
 function intro() {
-  main.innerHTML=`<section class="intro-screen"><div class="intro-tag"><span></span> UM NOVO COMEÇO</div><h1>Dê o primeiro passo<br>para deixar o álcool<br><em>para trás.</em></h1><p class="intro-copy">Entenda o que dificulta a mudança e descubra como começar, um passo de cada vez.</p><div class="intro-visual" aria-hidden="true"><div class="visual-ring ring-one"></div><div class="visual-ring ring-two"></div><div class="visual-core"><img src="/logo.png" width="58" height="58" alt=""></div><span class="visual-chip chip-one">Suas escolhas</span><span class="visual-chip chip-two">Seu próximo passo</span><span class="visual-dot dot-one"></span><span class="visual-dot dot-two"></span></div><button class="primary-action" id="start">Quero dar o primeiro passo <span aria-hidden="true">→</span></button><p class="intro-trust"><span>Leva cerca de 1 minuto</span><span aria-hidden="true">·</span><span>Sem cadastro</span><span aria-hidden="true">·</span><span>Sem julgamento</span></p></section>`;
-  document.querySelector('#start').addEventListener('click',()=>{step=0;saveProgress();render();focus();});
+  main.innerHTML=`<section class="intro-screen intro-simple"><img class="intro-drink" src="/favicon.png" width="112" height="112" alt="" aria-hidden="true"><h1>Dê o primeiro passo<br>para deixar o álcool<br><em>para trás.</em></h1><p class="intro-copy">Responda a algumas perguntas e descubra como começar.</p><button class="primary-action" id="start">Quero dar o primeiro passo <span aria-hidden="true">→</span></button></section>`;
+  document.querySelector('#start').addEventListener('click',()=>{trackOnce('start','quiz_start');step=0;saveProgress();render();focus();});
 }
 function bridgeScreen() {
-  main.innerHTML=`<section class="question-screen bridge-screen">${progress()}<div class="bridge-icon" aria-hidden="true"><img src="/logo.png" width="40" height="40" alt=""></div><h1>Você já deu o passo mais difícil.</h1><p class="bridge-copy">Olhar com honestidade para a própria relação com o álcool é o começo de qualquer mudança. Muita gente passa pelo mesmo, e dá para mudar, um dia de cada vez.</p><div class="bridge-card"><span>FALTA POUCO</span><p>Só mais <strong>duas perguntas rápidas</strong> para montar o seu resumo.</p></div><button class="primary-action" id="bridge-next">Continuar <span aria-hidden="true">→</span></button></section>`;
+  trackOnce('bridge','bridge_view');
+  main.innerHTML=`<section class="question-screen bridge-screen">${progress()}<img class="intro-drink bridge-drink" src="/favicon.png" width="88" height="88" alt="" aria-hidden="true"><h1>Você já deu o passo mais difícil.</h1><p class="bridge-copy">Olhar com honestidade para a própria relação com o álcool é o começo de qualquer mudança. Muita gente passa pelo mesmo, e dá para mudar, um dia de cada vez.</p><div class="bridge-card"><span>FALTA POUCO</span><p>Só mais <strong>duas perguntas rápidas</strong> para montar o seu resumo.</p></div><button class="primary-action" id="bridge-next">Continuar <span aria-hidden="true">→</span></button></section>`;
   document.querySelector('#bridge-next').addEventListener('click',()=>{bridgePassed=true;render();focus();});
 }
 function questionScreen() {
+  trackOnce(`q${step}`,'question_view',{step:step+1,detail:quiz.questions[step].id});
   const question=quiz.questions[step];
   let content;
   if(question.type==='choice')content=`<div class="answer-list" role="group" aria-labelledby="question-title">${question.options.map((option,index)=>`<button type="button" class="answer-card ${answers[question.id]===option.value?'selected':''}" data-answer="${option.value}"><span class="answer-letter">${String.fromCharCode(65+index)}</span><span>${option.label}</span><span class="answer-arrow" aria-hidden="true">›</span></button>`).join('')}</div>`;
@@ -110,6 +117,7 @@ function countUp(element, target) {
   window.requestAnimationFrame(tick);
 }
 function resultScreen() {
+  trackOnce('result','result_view');
   const projection=financialProjection(answers.spend,answers.frequency,0,0);
   const spends=projection.monthly>0;
   const timesDesato=Math.floor(projection.monthly/OFFER.price);
@@ -128,11 +136,12 @@ const BENEFITS=[
   [svg('<path d="M12 20s-8-4.8-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.2-8 10-8 10Z"/>'),'Corpo e saúde','Veja o que melhora no seu corpo a cada dia sem beber.']
 ];
 function offerScreen() {
+  trackOnce('offer','offer_view');
   const projection=financialProjection(answers.spend,answers.frequency,reduction,0);
   const saved=projection.monthly*reduction;
   const paybackDays=saved>0?Math.max(1,Math.ceil(OFFER.price/(saved/30))):null;
   const spends=projection.monthly>0;
-  const checkout=OFFER.checkoutUrl?`<a class="primary-action checkout-action" href="${escape(OFFER.checkoutUrl)}" rel="noopener">Quero começar agora <span aria-hidden="true">→</span></a>`:'<button class="primary-action offer-unavailable" disabled>Assinatura em preparação</button>';
+  const checkout=OFFER.checkoutUrl?`<a class="primary-action checkout-action" href="${escape(withCampaign(OFFER.checkoutUrl))}" rel="noopener">Quero começar agora <span aria-hidden="true">→</span></a>`:'<button class="primary-action offer-unavailable" disabled>Assinatura em preparação</button>';
   main.innerHTML=`<section class="offer-screen">
     <header class="offer-hero"><h1>Seu plano para <em>${goalLabel().toLowerCase()}</em></h1><p>Tudo o que você precisa, no seu celular, para os momentos em que a vontade aparece.</p></header>
 
@@ -166,6 +175,7 @@ function offerScreen() {
     <p class="calculation-note">Simulação com o mesmo gasto médio nas saídas restantes. A economia depende de uma mudança real; não é garantida pelo aplicativo.</p>
     ${OFFER.checkoutUrl?`<div class="sticky-cta"><div><strong>${currency(OFFER.price)}</strong><span>Pagamento único</span></div><button type="button" id="sticky-checkout">Começar</button></div>`:''}
     <p id="save-status" class="save-status" role="status" hidden></p><p id="quiz-error" class="quiz-error" role="alert" tabindex="-1"></p></section>`;
+  document.querySelector('.checkout-action')?.addEventListener('click',()=>track('checkout_click'));
   document.querySelector('#sticky-checkout')?.addEventListener('click',()=>document.querySelector('.checkout-action')?.click());
   main.querySelectorAll('[data-reduction]').forEach(button=>button.addEventListener('click',()=>{reduction=Number(button.dataset.reduction);offerScreen();}));
   updateSaveStatus();
@@ -182,4 +192,5 @@ window.addEventListener('pagehide',()=>{
   if(!recordingEnabled || step<0 || lastSaved===revision || !navigator.sendBeacon)return;
   navigator.sendBeacon('/api/funnel',new Blob([JSON.stringify({id:runId,token:writeToken,quizId:quiz.id,answers,completed:step===quiz.questions.length,revision:++revision})],{type:'application/json'}));
 });
+track('page_view');
 render();

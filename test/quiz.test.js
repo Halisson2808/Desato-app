@@ -147,7 +147,7 @@ test('os cinco links diretos abrem o funil correto sem tela de seleção',async(
 });
 test('transição conta no progresso, sem detalhar perguntas; oferta mostra benefícios antes do preço',async()=>{
   const app=await boot();
-  assert.match(app.document.querySelector('.intro-trust').textContent,/Sem cadastro/);
+  assert.equal(app.document.querySelector('.intro-trust'),null);
   app.event('#start');
   for(const value of ['reduce','social','sometimes','difficult'])app.event(`[data-answer="${value}"]`);
   app.event('[data-multiple="money"]');

@@ -1,0 +1,75 @@
+:root { --ink: #17362f; --muted: #66786f; --line: #e1ebe5; --green: #1d6b48; --mint: #e7f3ea; --bg: #f3f7f4; --red: #c4453b; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+button, input { font: inherit; }
+.admin-shell { max-width: 1180px; margin: 0 auto; padding: 18px 16px 48px; outline: none; }
+.admin-loading, .admin-empty { color: var(--muted); font-size: 14px; }
+.admin-loading { text-align: center; margin-top: 30vh; }
+/* Entrada */
+.admin-login { max-width: 380px; margin: 12vh auto 0; background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 28px 24px; text-align: center; }
+.admin-login img { border-radius: 16px; }
+.admin-login h1 { margin: 12px 0 4px; font-size: 22px; }
+.admin-login > p { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+.admin-login form { display: grid; gap: 6px; text-align: left; }
+.admin-login label { font-size: 13px; font-weight: 600; margin-top: 8px; }
+.admin-login input { min-height: 46px; border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; font-size: 16px; background: #fafcfb; }
+.admin-login button { margin-top: 14px; min-height: 48px; border: 0; border-radius: 12px; background: var(--green); color: #fff; font-weight: 700; cursor: pointer; }
+.admin-error { margin: 6px 0 0; color: var(--red); font-size: 13px; }
+/* Topo */
+.admin-top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.admin-top > div:first-child { display: flex; align-items: center; gap: 10px; }
+.admin-top img { border-radius: 10px; }
+.admin-top h1 { margin: 0; font-size: 20px; }
+.admin-period { display: flex; flex-wrap: wrap; gap: 6px; }
+.admin-period button { border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 99px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+.admin-period button.on { background: var(--green); border-color: var(--green); color: #fff; font-weight: 700; }
+.admin-period button.ghost { color: var(--muted); }
+/* Números */
+.admin-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.admin-kpis article { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; display: grid; gap: 2px; }
+.admin-kpis span { font-size: 12px; color: var(--muted); font-weight: 600; }
+.admin-kpis strong { font-size: 28px; letter-spacing: -.5px; }
+.admin-kpis small { font-size: 12px; color: var(--green); font-weight: 600; }
+.admin-card { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 18px; margin-bottom: 14px; min-width: 0; }
+.admin-card h2 { margin: 0 0 6px; font-size: 16px; }
+.admin-card h2.mt { margin-top: 18px; }
+.admin-hint { margin: 0 0 12px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.admin-grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+.admin-grid > .admin-card { margin-bottom: 0; }
+.admin-grid { margin-bottom: 14px; }
+@media (min-width: 860px) { .admin-grid { grid-template-columns: 1fr 1fr; } }
+/* Funil */
+.admin-funnel { display: grid; gap: 6px; }
+.admin-funnel-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(80px, 1fr) 54px 44px 52px; gap: 10px; align-items: center; font-size: 13px; }
+.admin-funnel-row .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-funnel-row strong { text-align: right; }
+.admin-funnel-row small { color: var(--muted); text-align: right; }
+.admin-funnel-row em { color: var(--red); font-style: normal; font-size: 12px; text-align: right; }
+.bar { height: 10px; border-radius: 99px; background: var(--mint); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: inherit; background: var(--green); }
+@media (max-width: 600px) { .admin-funnel-row { grid-template-columns: minmax(0, 1fr) 46px 40px 44px; } .admin-funnel-row .bar { display: none; } }
+/* Tabelas */
+.admin-table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+td:not(:first-child), th:not(:first-child) { text-align: right; }
+code { font-size: 12px; background: #f1f5f2; padding: 2px 6px; border-radius: 6px; word-break: break-all; white-space: normal; }
+/* Por dia */
+.admin-days { display: flex; align-items: flex-end; gap: 4px; height: 160px; overflow-x: auto; padding-bottom: 22px; position: relative; }
+.admin-days > div { position: relative; flex: 1 0 22px; height: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.admin-days i { position: absolute; bottom: 0; width: 70%; background: #b9dcc4; border-radius: 4px 4px 0 0; }
+.admin-days b { position: absolute; bottom: 0; width: 70%; background: var(--green); border-radius: 4px 4px 0 0; }
+.admin-days span { position: absolute; bottom: -20px; font-size: 10px; color: var(--muted); }
+/* Respostas */
+.admin-answers { margin-bottom: 14px; }
+.admin-answers h3 { font-size: 14px; margin: 10px 0 6px; }
+.admin-answers > div { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(60px, 1fr) 40px; gap: 10px; align-items: center; font-size: 13px; margin-bottom: 4px; }
+.admin-answers strong { text-align: right; }
+/* Sessões */
+.admin-session { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 6px; padding: 0 12px; }
+.admin-session summary { display: grid; grid-template-columns: 90px minmax(0, 1fr) 90px minmax(0, 1.4fr); gap: 10px; padding: 10px 0; cursor: pointer; font-size: 13px; }
+.admin-session summary .last { color: var(--muted); text-align: right; }
+.admin-session ol { margin: 0 0 12px; padding-left: 20px; font-size: 13px; line-height: 1.8; }
+.admin-session time { color: var(--muted); font-variant-numeric: tabular-nums; margin-right: 6px; }
+@media (max-width: 600px) { .admin-session summary { grid-template-columns: 80px minmax(0, 1fr); } .admin-session summary span:nth-child(3), .admin-session summary .last { display: none; } }
