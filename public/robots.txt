@@ -1,7 +1,5 @@
 User-agent: *
 Allow: /
-Allow: /page
-Allow: /quiz
 Disallow: /api/
 Disallow: /app
 

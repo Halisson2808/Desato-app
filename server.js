@@ -26,8 +26,12 @@ const SITE_ORIGIN = 'https://www.desatoapp.com.br';
 // A raiz e a cópia dela em /quiz ou /page declaram a raiz como endereço principal para o Google.
 function canonicalFor(data, pathname) {
   const own = { '/quiz': '/quiz.html', '/page': '/site.html' }[pathname.replace(/\/$/, '')];
-  if (pathname !== '/' && own !== ROOT_FILE) return data;
+  // Só a raiz (/) aparece no Google: /quiz e /page são cópias e ficam fora da busca.
+  if (pathname !== '/' && !own) return data;
+  const noindex = pathname !== '/' ? '<meta name="robots" content="noindex, follow">' : '';
   return Buffer.from(data.toString('utf8')
+    .replace(/<meta name="robots" content="[^"]*">/, '')
+    .replace('</head>', `${noindex}</head>`)
     .replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${SITE_ORIGIN}/$2`)
     .replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${SITE_ORIGIN}/$2`));
 }
