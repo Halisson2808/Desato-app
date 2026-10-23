@@ -27,6 +27,10 @@ export async function accessSession() {
 export const auth = {
   // Só para a área /admin: entrada com e-mail e senha.
   passwordLogin: (email, password) => client.auth.signInWithPassword({ email, password }),
+  // Painel: link no e-mail para criar/trocar a senha; volta para /admin com um código.
+  sendPasswordLink: email => client.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/admin` }),
+  exchangeCode: code => client.auth.exchangeCodeForSession(code),
+  setPassword: password => client.auth.updateUser({ password }),
   // Confere a compra no servidor do Supabase e recebe a sessão direto, sem e-mail.
   emailLogin: async email => {
     let response;

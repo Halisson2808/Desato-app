@@ -73,3 +73,5 @@ code { font-size: 12px; background: #f1f5f2; padding: 2px 6px; border-radius: 6p
 .admin-session ol { margin: 0 0 12px; padding-left: 20px; font-size: 13px; line-height: 1.8; }
 .admin-session time { color: var(--muted); font-variant-numeric: tabular-nums; margin-right: 6px; }
 @media (max-width: 600px) { .admin-session summary { grid-template-columns: 80px minmax(0, 1fr); } .admin-session summary span:nth-child(3), .admin-session summary .last { display: none; } }
+.admin-link { margin-top: 6px; border: 0; background: transparent; color: var(--green); font-size: 13px; font-weight: 600; text-decoration: underline; cursor: pointer; min-height: 36px; }
+.admin-error.ok { color: var(--green); }

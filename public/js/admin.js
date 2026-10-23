@@ -41,7 +41,15 @@ function loginScreen(message = '') {
       <label for="admin-pass">Senha</label><input id="admin-pass" type="password" autocomplete="current-password" required>
       <p class="admin-error" id="admin-error" ${message ? '' : 'hidden'}>${escape(message)}</p>
       <button type="submit" id="admin-submit">Entrar</button>
+      <button type="button" class="admin-link" id="admin-forgot">Criar ou esqueci minha senha</button>
     </form></section>`;
+  document.querySelector('#admin-forgot').addEventListener('click', async () => {
+    const email = document.querySelector('#admin-email').value.trim(), error = document.querySelector('#admin-error');
+    if (!/^[^s@]+@[^s@]+.[^s@]+$/.test(email)) { error.textContent = 'Digite o seu e-mail acima e toque de novo.'; error.hidden = false; return; }
+    const { error: failure } = await auth.sendPasswordLink(email);
+    error.textContent = failure ? 'Não consegui enviar agora. Tente de novo em alguns minutos.' : 'Pronto: abra o link que chegou no seu e-mail (veja o spam) neste mesmo navegador para criar a senha.';
+    error.classList.toggle('ok', !failure); error.hidden = false;
+  });
   document.querySelector('#admin-form').addEventListener('submit', async event => {
     event.preventDefault();
     const button = document.querySelector('#admin-submit'), error = document.querySelector('#admin-error');
@@ -50,6 +58,34 @@ function loginScreen(message = '') {
     document.querySelector('#admin-pass').value = '';
     if (failure) { error.textContent = 'E-mail ou senha incorretos.'; error.hidden = false; button.disabled = false; button.textContent = 'Entrar'; return; }
     load();
+  });
+}
+
+function passwordScreen(fromDashboard = false) {
+  root.innerHTML = `<section class="admin-login">
+    <img src="/favicon.png" width="64" height="64" alt="">
+    <h1>${fromDashboard ? 'Trocar senha' : 'Criar sua senha'}</h1><p>Use pelo menos 10 caracteres.</p>
+    <form id="pass-form">
+      <label for="pass-new">Nova senha</label><input id="pass-new" type="password" autocomplete="new-password" minlength="10" required>
+      <label for="pass-again">Repita a senha</label><input id="pass-again" type="password" autocomplete="new-password" minlength="10" required>
+      <p class="admin-error" id="pass-error" hidden></p>
+      <button type="submit" id="pass-submit">Salvar senha</button>
+      ${fromDashboard ? '<button type="button" class="admin-link" id="pass-back">Voltar ao painel</button>' : ''}
+    </form></section>`;
+  document.querySelector('#pass-back')?.addEventListener('click', dashboard);
+  document.querySelector('#pass-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    const first = document.querySelector('#pass-new').value, again = document.querySelector('#pass-again').value, error = document.querySelector('#pass-error');
+    if (first.length < 10) { error.textContent = 'Use pelo menos 10 caracteres.'; error.hidden = false; return; }
+    if (first !== again) { error.textContent = 'As senhas não conferem.'; error.hidden = false; return; }
+    const button = document.querySelector('#pass-submit'); button.disabled = true;
+    const { error: failure } = await auth.setPassword(first);
+    document.querySelector('#pass-new').value = ''; document.querySelector('#pass-again').value = '';
+    if (failure) { error.textContent = 'O Supabase recusou essa senha. Tente uma mais forte.'; error.hidden = false; button.disabled = false; return; }
+    if (fromDashboard) { dashboard(); return; }
+    // Depois de criar pelo link do e-mail, entra de novo com a senha (o painel exige sessão aberta com senha).
+    await auth.signOut().catch(() => {});
+    loginScreen('Senha criada. Agora entre com o seu e-mail e a senha.');
   });
 }
 
@@ -86,7 +122,7 @@ function dashboard() {
   for (const a of data.answers) (answersByStep[a.step] ||= []).push(a);
   root.innerHTML = `
     <header class="admin-top"><div><img src="/favicon.png" width="36" height="36" alt=""><h1>Painel do Desato</h1></div>
-      <div class="admin-period">${[[1, 'Hoje'], [7, '7 dias'], [30, '30 dias'], [90, '90 dias']].map(([d, l]) => `<button data-days="${d}" class="${d === days ? 'on' : ''}">${l}</button>`).join('')}<button id="admin-out" class="ghost">Sair</button></div></header>
+      <div class="admin-period">${[[1, 'Hoje'], [7, '7 dias'], [30, '30 dias'], [90, '90 dias']].map(([d, l]) => `<button data-days="${d}" class="${d === days ? 'on' : ''}">${l}</button>`).join('')}<button id="admin-pass" class="ghost">Trocar senha</button><button id="admin-out" class="ghost">Sair</button></div></header>
 
     <section class="admin-kpis">
       ${[['Visitantes', t.visitors], ['Sessões', t.sessions], ['Começaram o quiz', f.started, pct(f.started, f.visits)], ['Viram a oferta', f.offer, pct(f.offer, f.visits)], ['Clicaram em comprar', f.checkout, pct(f.checkout, f.visits)]]
@@ -127,7 +163,15 @@ function dashboard() {
         <p class="admin-hint">Entrou por <code>${escape(s.landing || '/')}</code>${s.utm_campaign ? ` · campanha ${escape(s.utm_campaign)}` : ''}</p>
         <ol>${(s.events || []).map(e => `<li><time>${new Date(e.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time> ${escape(EVENT_LABELS[e.event] || e.event)}${e.step ? ` ${e.step}` : ''}${e.event === 'answer' ? `: <b>${escape(answerLabel(e.step, e.detail))}</b>` : e.event === 'question_view' ? ` — ${escape(questionTitle(e.detail))}` : e.event === 'page_view' ? ` <code>${escape(e.path)}</code>` : ''}</li>`).join('')}</ol></details>`).join('') : '<p class="admin-empty">Sem sessões neste período.</p>'}</section>`;
   root.querySelectorAll('[data-days]').forEach(b => b.addEventListener('click', () => { days = Number(b.dataset.days); load(); }));
+  document.querySelector('#admin-pass').addEventListener('click', () => passwordScreen(true));
   document.querySelector('#admin-out').addEventListener('click', async () => { await auth.signOut().catch(() => {}); loginScreen(); });
 }
 
-initializeAuth(() => {}).then(() => load()).catch(() => loginScreen('Não consegui iniciar. Recarregue a página.'));
+initializeAuth(() => {}).then(async () => {
+  const code = new URLSearchParams(location.search).get('code');
+  if (!code) return load();
+  history.replaceState(null, '', '/admin');
+  const { error } = await auth.exchangeCode(code);
+  if (error) return loginScreen('O link expirou ou já foi usado. Peça outro em "Criar ou esqueci minha senha".');
+  passwordScreen();
+}).catch(() => loginScreen('Não consegui iniciar. Recarregue a página.'));
