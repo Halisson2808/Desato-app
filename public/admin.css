@@ -75,3 +75,4 @@ code { font-size: 12px; background: #f1f5f2; padding: 2px 6px; border-radius: 6p
 @media (max-width: 600px) { .admin-session summary { grid-template-columns: 80px minmax(0, 1fr); } .admin-session summary span:nth-child(3), .admin-session summary .last { display: none; } }
 .admin-link { margin-top: 6px; border: 0; background: transparent; color: var(--green); font-size: 13px; font-weight: 600; text-decoration: underline; cursor: pointer; min-height: 36px; }
 .admin-error.ok { color: var(--green); }
+.admin-login .admin-link { background: transparent; color: var(--green); border: 0; margin-top: 4px; box-shadow: none; }

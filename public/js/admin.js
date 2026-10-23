@@ -45,7 +45,7 @@ function loginScreen(message = '') {
     </form></section>`;
   document.querySelector('#admin-forgot').addEventListener('click', async () => {
     const email = document.querySelector('#admin-email').value.trim(), error = document.querySelector('#admin-error');
-    if (!/^[^s@]+@[^s@]+.[^s@]+$/.test(email)) { error.textContent = 'Digite o seu e-mail acima e toque de novo.'; error.hidden = false; return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { error.textContent = 'Digite o seu e-mail acima e toque de novo.'; error.hidden = false; return; }
     const { error: failure } = await auth.sendPasswordLink(email);
     error.textContent = failure ? 'Não consegui enviar agora. Tente de novo em alguns minutos.' : 'Pronto: abra o link que chegou no seu e-mail (veja o spam) neste mesmo navegador para criar a senha.';
     error.classList.toggle('ok', !failure); error.hidden = false;
