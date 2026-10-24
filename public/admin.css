@@ -82,3 +82,33 @@ code { font-size: 12px; background: #f1f5f2; padding: 2px 6px; border-radius: 6p
 .admin-tabs button.on { color: var(--green); border-bottom-color: var(--green); }
 .admin-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 99px; background: var(--mint); color: var(--green); font-size: 11px; font-weight: 700; }
 td:first-child { white-space: normal; }
+/* Gráfico de linhas por dia */
+.admin-line { width: 100%; height: auto; display: block; }
+.admin-line text { font-size: 11px; fill: var(--muted); }
+.admin-line .grid { stroke: var(--line); stroke-width: 1; }
+.admin-line path { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.l-visitors { stroke: #4fa376; } .l-checkout { stroke: var(--green); stroke-dasharray: 5 4; }
+.d-visitors { fill: #4fa376; } .d-checkout { fill: var(--green); }
+.admin-legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+.admin-legend i { display: inline-block; width: 12px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.admin-legend .c1 { background: #4fa376; } .admin-legend .c2 { background: var(--green); }
+/* Pizza */
+.admin-pie { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.admin-pie svg { width: 180px; height: 180px; flex: 0 0 auto; }
+.pie-total { font-size: 28px; font-weight: 700; fill: var(--ink); } .pie-sub { font-size: 11px; fill: var(--muted); }
+.admin-pie ul { list-style: none; margin: 0; padding: 0; flex: 1 1 160px; display: grid; gap: 8px; min-width: 0; }
+.admin-pie li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto 44px; gap: 8px; align-items: center; font-size: 13px; }
+.admin-pie li i { width: 12px; height: 12px; border-radius: 4px; }
+.admin-pie li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-pie li small { color: var(--muted); text-align: right; }
+/* Dica ao passar o mouse */
+.admin-tip { position: fixed; z-index: 50; pointer-events: none; background: #17362f; color: #fff; padding: 8px 12px; border-radius: 10px; font-size: 12px; line-height: 1.55; box-shadow: 0 8px 24px rgba(0,0,0,.25); max-width: 240px; }
+.admin-tip[hidden] { display: none; }
+.admin-line .hit { fill: transparent; cursor: crosshair; }
+.admin-line .guide { stroke: #9fc4ad; stroke-width: 1; opacity: 0; }
+.admin-line .day:hover .guide { opacity: 1; }
+.admin-line .day:hover .d-visitors, .admin-line .day:hover .d-checkout { r: 6; }
+.admin-pie .slice { cursor: pointer; transition: stroke-width .12s; }
+.admin-pie .slice:hover { stroke-width: 42; }
+.admin-pie li { cursor: default; }
+html,body,button,a,input,select,textarea{touch-action:manipulation}

@@ -5,3 +5,4 @@
 .site-copyright{width:100%;margin:12px 0 0;font-size:12px;opacity:.7}
 
 img[src="/logo.png"], img[src="/favicon.png"] { border-radius: 22%; }
+html,body,button,a,input,select,textarea{touch-action:manipulation}

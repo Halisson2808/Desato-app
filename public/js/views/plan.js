@@ -25,23 +25,30 @@ function listHtml(plans) {
     </div>`;
 }
 
-function detailHtml(plan) {
+function detailHtml(plan, run) {
   const hint = skippedTasks(plan);
+  const all = run && run.done.length === plan.tasks.length;
+  const checklist = run ? `<div class="plan-checklist">${plan.tasks.map(task => {
+    const on = run.done.includes(task);
+    return `<button class="plan-check ${on ? 'on' : ''}" data-check="${escapeHtml(task)}" aria-pressed="${on}"><span>${on ? '✓' : ''}</span>${escapeHtml(task)}</button>`;
+  }).join('')}</div>
+    <button class="primary-btn plan-finish" id="run-finish">${all ? 'Fiz tudo!' : 'Terminei'}</button>`
+    : `<ol class="plan-tasks">${plan.tasks.map(task => `<li>${escapeHtml(task)}</li>`).join('')}</ol>
+    <button class="plan-add" id="plan-edit">Editar plano</button>
+    <button class="plan-cancel" id="plan-delete">Excluir plano</button>`;
   return `
     <div class="plan-screen">
       <button class="plan-back" id="plan-back">‹ Meus planos</button>
       <section class="plan-hero">
         <span>PLANO ${plan.slot}</span>
         <strong>${escapeHtml(planName(plan))}</strong>
-        <p>${plural(plan.tasks.length, 'tarefa', 'tarefas')} que você mesmo escolheu.</p>
-        <button class="plan-go" id="plan-start">Começar agora</button>
+        <p>${run ? `${run.done.length} de ${plan.tasks.length} feitas. Uma de cada vez.` : `${plural(plan.tasks.length, 'tarefa', 'tarefas')} que você mesmo escolheu.`}</p>
+        ${run ? '' : '<button class="plan-go" id="plan-start">Começar agora</button>'}
       </section>
-      ${hint.length ? `<p class="plan-hint">Você tem pulado <strong>${hint.map(escapeHtml).join(', ')}</strong>. Que tal trocar por algo que você faria de verdade?</p>` : ''}
+      ${!run && hint.length ? `<p class="plan-hint">Você tem pulado <strong>${hint.map(escapeHtml).join(', ')}</strong>. Que tal trocar por algo que você faria de verdade?</p>` : ''}
       <section class="plan-list">
         <h3>Tarefas</h3>
-        <ol class="plan-tasks">${plan.tasks.map(task => `<li>${escapeHtml(task)}</li>`).join('')}</ol>
-        <button class="plan-add" id="plan-edit">Editar plano</button>
-        <button class="plan-cancel" id="plan-delete">Excluir plano</button>
+        ${checklist}
       </section>
     </div>`;
 }
@@ -66,25 +73,13 @@ function editorHtml(draft, isNew) {
     </div>`;
 }
 
-function runHtml(plan, run) {
-  const all = run.done.length === plan.tasks.length;
-  return `
-    <section class="ritual"><div class="ritual-top"><span>${escapeHtml(planName(plan))} · ${run.done.length}/${plan.tasks.length}</span><button id="run-close">Sair</button></div>
-      <div class="ritual-body">
-        <h2>Siga seu plano</h2>
-        <p>Você decidiu isso com a cabeça fria. Faça uma de cada vez e marque.</p>
-        <div class="ritual-checks">${plan.tasks.map(task => { const on = run.done.includes(task); return `<button class="ritual-check ${on ? 'on' : ''}" data-check="${escapeHtml(task)}" aria-pressed="${on}"><span>${on ? '✓' : ''}</span>${escapeHtml(task)}</button>`; }).join('')}</div>
-        <button class="ritual-next" id="run-finish">${all ? 'Fiz tudo!' : 'Terminei'}</button>
-      </div></section>`;
-}
-
 const doneHtml = count => `
-  <section class="ritual"><div class="ritual-body">
-    <div class="ritual-done">✓</div>
+  <div class="plan-screen"><section class="plan-done">
+    <div class="plan-done-check">✓</div>
     <h2>${count ? 'Você seguiu seu plano.' : 'Você parou para pensar antes.'}</h2>
     <p>${count ? `Fez ${plural(count, 'tarefa', 'tarefas')}. Da próxima vez ele vai estar aqui, do mesmo jeito.` : 'Isso já conta. Da próxima vez, tente fazer pelo menos uma tarefa.'}</p>
-    <button class="ritual-next" id="run-home">Voltar aos meus planos</button>
-  </div></section>`;
+    <button class="primary-btn" id="run-home">Voltar aos meus planos</button>
+  </section></div>`;
 
 export const planView = {
   html({ state }) {
@@ -94,8 +89,7 @@ export const planView = {
     if (ui.draft) return editorHtml(ui.draft, !plans.some(plan => plan.slot === ui.draft.slot));
     const plan = plans.find(item => item.slot === ui.open);
     if (!plan) return listHtml(plans);
-    if (ui.running) return runHtml(plan, ui.run);
-    return detailHtml(plan);
+    return detailHtml(plan, ui.running ? ui.run : null);
   },
   bind({ state, redraw, toast, mutate, endpoints }) {
     const plans = state.store.plans || [];
@@ -154,7 +148,7 @@ export const planView = {
         plan.active = { startedAt: plan.active?.startedAt || new Date().toISOString(), done: run.done };
         save(); redraw();
       }));
-      $('#run-close').addEventListener('click', reset);
+      $('#plan-back').addEventListener('click', reset);
       $('#run-finish').addEventListener('click', async () => {
         const count = run.done.length;
         if (await mutate(() => endpoints.planFinish(plan.slot, run.done))) { state.ui.plan = { finished: count }; redraw(); }

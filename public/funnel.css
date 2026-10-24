@@ -145,3 +145,4 @@ img[src="/logo.png"], img[src="/favicon.png"] { border-radius: 22%; }
 .intro-simple .intro-copy { margin: 0 auto 26px; }
 .intro-simple .primary-action { max-width: 420px; }
 .bridge-drink{width:88px;height:88px;border-radius:22px;margin:6px auto 4px}
+html,body,button,a,input,select,textarea{touch-action:manipulation}
