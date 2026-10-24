@@ -1121,3 +1121,42 @@ img[src="/logo.png"], img[src="/favicon.png"] { border-radius: 22%; }
 .plan-done .primary-btn { width: 100%; }
 /* Sem zoom por toque duplo (o zoom com dois dedos continua funcionando) */
 html, body, button, a, input, select, textarea { touch-action: manipulation; }
+
+/* ===== Início mais compacto no celular e botões sem pré-seleção ===== */
+/* Sem resposta: os dois botões têm o mesmo estilo (tom suave, sem sombra). Respondido: o escolhido fica forte e o outro apaga. */
+.today-hero .today-answer, .day-choice-btn { box-shadow: none !important; transition: opacity .15s, background .15s; }
+.today-hero .today-answer.answer-clean, .day-choice-btn.clean { background: #e8f4ea; color: #1d4d33; border: 2px solid #b5d8bf; }
+.today-hero .today-answer.answer-used, .day-choice-btn.used { background: #fbeae8; color: #8a2b25; border: 2px solid #efc3be; }
+.today-hero .today-answer.answer-clean.is-selected, .day-choice-btn.clean.is-selected { background: #2f8a55; color: #fff; border-color: #2f8a55; }
+.today-hero .today-answer.answer-used.is-selected, .day-choice-btn.used.is-selected { background: #d64545; color: #fff; border-color: #d64545; }
+.today-hero .today-answers:has(.is-selected) .today-answer:not(.is-selected),
+.day-choice:has(.is-selected) .day-choice-btn:not(.is-selected) { opacity: .35; }
+.today-hero .today-answer:focus, .day-choice-btn:focus { outline: none; }
+.today-hero .today-answer:focus-visible, .day-choice-btn:focus-visible { outline: 3px solid rgba(29,107,72,.35); outline-offset: 2px; }
+
+.today-beer { width: 76px; height: 76px; }
+@media (max-width: 700px) {
+  .view { padding-top: 10px !important; }
+  .home-dashboard { gap: 10px; }
+  .today-question.today-hero { padding: 12px 14px 14px; border-radius: 20px; gap: 2px; }
+  .today-beer { width: 52px; height: 52px; margin-bottom: 0; }
+  .today-hero h3 { font-size: 21px; margin: 2px 0 8px; letter-spacing: -.5px; }
+  .today-sub { display: none; }
+  .today-hero .today-answers { gap: 8px; }
+  .today-hero .today-answer { min-height: 46px; border-radius: 14px; font-size: 14px; }
+  .today-hero .answer-icon svg { width: 20px; height: 20px; }
+  .cal2 { padding: 12px 12px 10px; border-radius: 18px; }
+  .cal2-head { margin-bottom: 8px; }
+  .cal2-title svg { width: 22px; height: 22px; }
+  .cal2-title h3 { font-size: 16px; }
+  .cal2 .calendar-weekdays { font-size: 12px; margin-bottom: 2px; }
+  .cal2 .calendar-days { gap: 2px; }
+  .cal2 .calendar-day { width: 34px; height: 34px; }
+  .cal2 .calendar-day > span:first-child { font-size: 14px; }
+  .calendar-legend { margin-top: 6px; gap: 10px; }
+  .home-evolution { margin-top: 8px; padding: 10px 12px; border-radius: 16px; gap: 10px; }
+  .evolution-icon { height: 22px; padding-right: 10px; }
+  .evolution-copy strong { font-size: 15px; }
+  .evolution-copy span { font-size: 12px; }
+  .evolution-pill { padding: 6px 12px; }
+}
